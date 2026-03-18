@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Threat Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030a0f; color: #c8dde8; font-family: 'Share Tech Mono', monospace; padding: 32px; }
+    .back { color: #4a6a7a; font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+    .back:hover { color: #00d4ff; }
+    h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: #fff; letter-spacing: 3px; margin-bottom: 24px; }
+    h1 span { color: #00d4ff; }
+    .panel { background: #071420; border: 1px solid rgba(0,212,255,0.15); padding: 20px; margin-bottom: 16px; }
+    .panel-title { font-size: 12px; letter-spacing: 2px; color: #4a6a7a; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; text-align: left; padding: 8px 12px; border-bottom: 1px solid rgba(0,212,255,0.1); }
+    td { padding: 11px 12px; border-bottom: 1px solid rgba(0,212,255,0.05); font-size: 12px; }
+    tr:hover td { background: rgba(0,212,255,0.04); }
+    .badge { display: inline-block; padding: 2px 8px; font-size: 10px; }
+    .critical { background: rgba(255,59,59,0.2); color: #ff3b3b; border: 1px solid rgba(255,59,59,0.3); }
+    .high { background: rgba(255,184,0,0.1); color: #ffb800; border: 1px solid rgba(255,184,0,0.2); }
+    .medium { background: rgba(0,212,255,0.1); color: #00d4ff; border: 1px solid rgba(0,212,255,0.2); }
+    .blocked { color: #00ff9d; }
+    .active-threat { color: #ff3b3b; }
+    .loading { color: #4a6a7a; padding: 20px; text-align: center; }
+    .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 16px; }
+    .stat { background: #071420; border: 1px solid rgba(0,212,255,0.15); padding: 16px; text-align: center; }
+    .stat-num { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; font-weight: 700; color: #00d4ff; }
+    .stat-lbl { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../index.html">← BACK TO DASHBOARD</a>
+  <h1>THREAT <span>INTELLIGENCE</span></h1>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-num" id="total-threats">—</div><div class="stat-lbl">TOTAL THREATS</div></div>
+    <div class="stat"><div class="stat-num" id="blocked-threats" style="color:#00ff9d">—</div><div class="stat-lbl">BLOCKED</div></div>
+    <div class="stat"><div class="stat-num" id="active-threats" style="color:#ff3b3b">—</div><div class="stat-lbl">ACTIVE</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">LIVE THREAT EVENT LOG</div>
+    <table>
+      <thead><tr><th>TIME</th><th>ORIGIN</th><th>IP</th><th>ATTACK TYPE</th><th>SEVERITY</th><th>STATUS</th></tr></thead>
+      <tbody id="threats-body"><tr><td colspan="6" class="loading">Loading threats...</td></tr></tbody>
+    </table>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('sentinel_token');
+    if (!token) window.location.href = 'login.html';
+
+    // Generate mock threat data since threat_events table may be empty
+    const mockThreats = [
+      { created_at: new Date(), origin_country: 'Russia', origin_ip: '185.220.101.45', attack_type: 'Brute Force', severity: 'high', blocked: true },
+      { created_at: new Date(Date.now()-60000), origin_country: 'China', origin_ip: '103.76.228.12', attack_type: 'Port Scan', severity: 'medium', blocked: true },
+      { created_at: new Date(Date.now()-120000), origin_country: 'North Korea', origin_ip: '175.45.176.3', attack_type: 'Lateral Movement', severity: 'critical', blocked: false },
+      { created_at: new Date(Date.now()-180000), origin_country: 'Iran', origin_ip: '5.160.218.74', attack_type: 'Phishing', severity: 'high', blocked: true },
+      { created_at: new Date(Date.now()-240000), origin_country: 'Unknown', origin_ip: '91.108.4.199', attack_type: 'DDoS', severity: 'critical', blocked: false },
+    ];
+
+    function renderThreats(threats) {
+      const tbody = document.getElementById('threats-body');
+      const blocked = threats.filter(t => t.blocked).length;
+      const active = threats.filter(t => !t.blocked).length;
+      document.getElementById('total-threats').textContent = threats.length;
+      document.getElementById('blocked-threats').textContent = blocked;
+      document.getElementById('active-threats').textContent = active;
+
+      tbody.innerHTML = threats.map(t => `
+        <tr>
+          <td>${new Date(t.created_at).toLocaleTimeString()}</td>
+          <td>${t.origin_country || 'Unknown'}</td>
+          <td style="color:#00d4ff">${t.origin_ip || 'N/A'}</td>
+          <td>${t.attack_type}</td>
+          <td><span class="badge ${t.severity}">${t.severity.toUpperCase()}</span></td>
+          <td class="${t.blocked ? 'blocked' : 'active-threat'}">${t.blocked ? '✓ BLOCKED' : '● ACTIVE'}</td>
+        </tr>`).join('');
+    }
+
+    renderThreats(mockThreats);
+  </script>
+</body>
+</html>

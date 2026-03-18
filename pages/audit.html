@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Audit Log</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030a0f; color: #c8dde8; font-family: 'Share Tech Mono', monospace; padding: 32px; }
+    .back { color: #4a6a7a; font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+    .back:hover { color: #00d4ff; }
+    h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: #fff; letter-spacing: 3px; margin-bottom: 24px; }
+    h1 span { color: #00d4ff; }
+    .panel { background: #071420; border: 1px solid rgba(0,212,255,0.15); padding: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; text-align: left; padding: 8px 12px; border-bottom: 1px solid rgba(0,212,255,0.1); }
+    td { padding: 11px 12px; border-bottom: 1px solid rgba(0,212,255,0.05); font-size: 12px; }
+    tr:hover td { background: rgba(0,212,255,0.04); }
+    .loading { color: #4a6a7a; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../index.html">← BACK TO DASHBOARD</a>
+  <h1>AUDIT <span>LOG</span></h1>
+  <div class="panel">
+    <table>
+      <thead><tr><th>TIME</th><th>USER</th><th>ACTION</th><th>TARGET</th><th>IP</th></tr></thead>
+      <tbody id="audit-body"><tr><td colspan="5" class="loading">Loading audit log...</td></tr></tbody>
+    </table>
+  </div>
+  <script>
+    const token = localStorage.getItem('sentinel_token');
+    if (!token) window.location.href = 'login.html';
+
+    async function loadAudit() {
+      try {
+        const res = await fetch('http://localhost:5000/api/audit', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const tbody = document.getElementById('audit-body');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" class="loading">No audit entries yet</td></tr>'; return; }
+        tbody.innerHTML = data.map(a => `
+          <tr>
+            <td>${new Date(a.created_at).toLocaleString()}</td>
+            <td style="color:#00d4ff">${a.user_id || 'system'}</td>
+            <td>${a.action}</td>
+            <td>${a.target_table || '-'}</td>
+            <td>${a.ip_address || 'localhost'}</td>
+          </tr>`).join('');
+      } catch {
+        document.getElementById('audit-body').innerHTML = '<tr><td colspan="5" class="loading">No audit data available</td></tr>';
+      }
+    }
+    loadAudit();
+  </script>
+</body>
+</html>

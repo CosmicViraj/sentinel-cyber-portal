@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Incidents</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030a0f; color: #c8dde8; font-family: 'Share Tech Mono', monospace; padding: 24px; }
+    h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: #00d4ff; letter-spacing: 3px; margin-bottom: 20px; }
+    .back { color: #4a6a7a; font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+    .back:hover { color: #00d4ff; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(0,212,255,0.15); }
+    td { padding: 12px; border-bottom: 1px solid rgba(0,212,255,0.06); font-size: 12px; }
+    tr:hover td { background: rgba(0,212,255,0.04); }
+    .badge { display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+    .critical { background: rgba(255,59,59,0.2); color: #ff3b3b; border: 1px solid rgba(255,59,59,0.4); }
+    .high { background: rgba(255,184,0,0.15); color: #ffb800; border: 1px solid rgba(255,184,0,0.3); }
+    .medium { background: rgba(0,212,255,0.1); color: #00d4ff; border: 1px solid rgba(0,212,255,0.2); }
+    .low { background: rgba(0,255,157,0.1); color: #00ff9d; border: 1px solid rgba(0,255,157,0.2); }
+    .loading { color: #4a6a7a; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../index.html">← BACK TO DASHBOARD</a>
+  <h1>ALL INCIDENTS</h1>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>TYPE</th><th>SEVERITY</th><th>ASSET</th><th>STATUS</th><th>TIME</th></tr>
+    </thead>
+    <tbody id="incidents-body">
+      <tr><td colspan="6" class="loading">Loading incidents...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    const token = localStorage.getItem('sentinel_token');
+    if (!token) window.location.href = 'login.html';
+
+    async function loadIncidents() {
+      const res = await fetch('http://localhost:5000/api/incidents', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      const tbody = document.getElementById('incidents-body');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" class="loading">No incidents found</td></tr>'; return; }
+      tbody.innerHTML = data.map(i => `
+        <tr>
+          <td style="color:#00d4ff">${i.incident_number}</td>
+          <td>${i.type}</td>
+          <td><span class="badge ${i.severity}">${i.severity.toUpperCase()}</span></td>
+          <td>${i.affected_asset || '-'}</td>
+          <td>${i.status}</td>
+          <td>${new Date(i.created_at).toLocaleTimeString()}</td>
+        </tr>`).join('');
+    }
+    loadIncidents();
+  </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Protocols</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030a0f; color: #c8dde8; font-family: 'Share Tech Mono', monospace; padding: 32px; }
+    .back { color: #4a6a7a; font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+    .back:hover { color: #00d4ff; }
+    h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: #fff; letter-spacing: 3px; margin-bottom: 24px; }
+    h1 span { color: #00d4ff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .card { background: #071420; border: 1px solid rgba(0,212,255,0.15); padding: 22px; }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .card-icon { font-size: 22px; }
+    .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #fff; }
+    .card-level { font-size: 10px; padding: 2px 8px; margin-top: 3px; display: inline-block; }
+    .level-1 { background: rgba(0,255,157,0.1); color: #00ff9d; border: 1px solid rgba(0,255,157,0.3); }
+    .level-2 { background: rgba(255,184,0,0.1); color: #ffb800; border: 1px solid rgba(255,184,0,0.3); }
+    .level-3 { background: rgba(255,59,59,0.1); color: #ff3b3b; border: 1px solid rgba(255,59,59,0.3); }
+    .steps { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .step { font-size: 11px; line-height: 1.6; color: #c8dde8; padding-left: 16px; border-left: 2px solid rgba(0,212,255,0.2); }
+  </style>
+</head>
+<body>
+  <a class="back" href="../index.html">← BACK TO DASHBOARD</a>
+  <h1>SECURITY <span>PROTOCOLS</span></h1>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><div class="card-icon">🔴</div><div><div class="card-title">CRITICAL INCIDENT</div><span class="card-level level-3">LEVEL 3</span></div></div>
+      <ul class="steps">
+        <li class="step">Immediately isolate affected systems from network</li>
+        <li class="step">Notify Cyber Command and senior officer on duty</li>
+        <li class="step">Preserve all logs and forensic evidence</li>
+        <li class="step">Activate incident response team within 15 minutes</li>
+        <li class="step">Submit INC report via SENTINEL portal</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon">🟡</div><div><div class="card-title">DATA BREACH</div><span class="card-level level-2">LEVEL 2</span></div></div>
+      <ul class="steps">
+        <li class="step">Identify and contain the breach source immediately</li>
+        <li class="step">Assess scope — what data was accessed/exfiltrated</li>
+        <li class="step">Revoke all potentially compromised credentials</li>
+        <li class="step">Notify Data Protection Officer within 1 hour</li>
+        <li class="step">Document timeline and affected systems</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon">🟢</div><div><div class="card-title">PHISHING RESPONSE</div><span class="card-level level-1">LEVEL 1</span></div></div>
+      <ul class="steps">
+        <li class="step">Do not click any links or download attachments</li>
+        <li class="step">Forward the email to cyber@sentinel.mod.gov</li>
+        <li class="step">If credentials entered — change password immediately</li>
+        <li class="step">Report via SENTINEL portal with email headers</li>
+        <li class="step">Warn colleagues if organisation-wide campaign suspected</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon">🔵</div><div><div class="card-title">RANSOMWARE</div><span class="card-level level-3">LEVEL 3</span></div></div>
+      <ul class="steps">
+        <li class="step">Disconnect affected device from network immediately</li>
+        <li class="step">Do NOT pay ransom — escalate to Cyber Command</li>
+        <li class="step">Identify ransomware strain via SENTINEL AI</li>
+        <li class="step">Restore from last verified clean backup</li>
+        <li class="step">Conduct full forensic analysis post-recovery</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

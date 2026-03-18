@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #030a0f;
+      color: #c8dde8;
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+    .login-box {
+      background: #071420;
+      border: 1px solid rgba(0,212,255,0.2);
+      padding: 40px;
+      width: 400px;
+      position: relative;
+      z-index: 1;
+    }
+    .logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 36px;
+      font-weight: 900;
+      color: #00d4ff;
+      letter-spacing: 6px;
+      text-align: center;
+      margin-bottom: 4px;
+      text-shadow: 0 0 20px rgba(0,212,255,0.5);
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #4a6a7a;
+      margin-bottom: 32px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; display: block; margin-bottom: 6px; }
+    .form-input {
+      width: 100%;
+      background: rgba(0,212,255,0.04);
+      border: 1px solid rgba(0,212,255,0.15);
+      color: #c8dde8;
+      padding: 10px 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      outline: none;
+    }
+    .form-input:focus { border-color: #00d4ff; background: rgba(0,212,255,0.08); }
+    .login-btn {
+      width: 100%;
+      background: #00d4ff;
+      color: #000;
+      border: none;
+      padding: 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+    .login-btn:hover { background: #fff; box-shadow: 0 0 20px rgba(0,212,255,0.5); }
+    .error-msg {
+      background: rgba(255,59,59,0.1);
+      border: 1px solid rgba(255,59,59,0.3);
+      color: #ff3b3b;
+      padding: 10px;
+      font-size: 12px;
+      margin-top: 12px;
+      display: none;
+    }
+    .classification {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #ff3b3b;
+      margin-top: 24px;
+      border-top: 1px solid rgba(0,212,255,0.1);
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="logo">SENTINEL</div>
+    <div class="subtitle">MINISTRY OF DEFENCE // CYBER COMMAND</div>
+    <div class="form-group">
+      <label class="form-label">USERNAME</label>
+      <input class="form-input" type="text" id="username" placeholder="Enter username...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">PASSWORD</label>
+      <input class="form-input" type="password" id="password" placeholder="Enter password...">
+    </div>
+    <button class="login-btn" onclick="login()">AUTHENTICATE</button>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="classification">⚠ RESTRICTED ACCESS — AUTHORISED PERSONNEL ONLY</div>
+  </div>
+
+  <script>
+    async function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('error-msg');
+
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+
+        localStorage.setItem('sentinel_token', data.token);
+        localStorage.setItem('sentinel_user', JSON.stringify(data.user));
+        window.location.href = '../index.html';
+      } catch (err) {
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = '⚠ ' + err.message;
+      }
+    }
+
+    // Allow Enter key
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  </script>
+</body>
+</html>

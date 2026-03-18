@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — AI Command</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030a0f; color: #c8dde8; font-family: 'Share Tech Mono', monospace; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    body::after { content:''; position:fixed; inset:0; background-image: linear-gradient(rgba(0,212,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.02) 1px, transparent 1px); background-size:40px 40px; pointer-events:none; }
+
+    /* TOP BAR */
+    .topbar { background: rgba(3,10,15,0.98); border-bottom: 1px solid rgba(0,212,255,0.15); padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 10; }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .back { color: #4a6a7a; font-size: 11px; text-decoration: none; }
+    .back:hover { color: #00d4ff; }
+    .logo { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: #00d4ff; letter-spacing: 4px; text-shadow: 0 0 20px rgba(0,212,255,0.4); }
+    .status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #4a6a7a; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff9d; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,255,157,0.4)} 50%{box-shadow:0 0 0 6px rgba(0,255,157,0)} }
+
+    /* TABS */
+    .tabs { display: flex; gap: 2px; background: #071420; border-bottom: 1px solid rgba(0,212,255,0.1); flex-shrink: 0; padding: 0 24px; }
+    .tab { padding: 12px 20px; font-size: 11px; letter-spacing: 2px; color: #4a6a7a; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+    .tab:hover { color: #00d4ff; }
+    .tab.active { color: #00d4ff; border-bottom-color: #00d4ff; }
+
+    /* CONTENT */
+    .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .tab-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .tab-panel.active { display: flex; }
+
+    /* CHAT */
+    .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); }
+    .msg { max-width: 75%; padding: 12px 16px; font-size: 12px; line-height: 1.7; position: relative; }
+    .msg.user { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); align-self: flex-end; color: #00d4ff; }
+    .msg.ai { background: rgba(7,20,32,0.9); border: 1px solid rgba(0,212,255,0.12); align-self: flex-start; color: #c8dde8; }
+    .msg-label { font-size: 9px; letter-spacing: 3px; margin-bottom: 6px; color: #4a6a7a; }
+    .msg.user .msg-label { color: #00d4ff; }
+    .chat-input-row { padding: 16px 24px; border-top: 1px solid rgba(0,212,255,0.1); display: flex; gap: 10px; flex-shrink: 0; background: rgba(3,10,15,0.8); }
+    .chat-input { flex: 1; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.15); color: #c8dde8; padding: 12px 14px; font-family: 'Share Tech Mono', monospace; font-size: 13px; outline: none; }
+    .chat-input:focus { border-color: #00d4ff; background: rgba(0,212,255,0.07); }
+    .send-btn { background: #00d4ff; color: #000; border: none; padding: 12px 28px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; }
+    .send-btn:hover { background: #fff; }
+    .send-btn:disabled { background: #1a3a4a; color: #4a6a7a; cursor: not-allowed; }
+
+    /* QUICK PROMPTS */
+    .quick-prompts { padding: 0 24px 12px; display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+    .qp { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.15); color: #4a6a7a; padding: 5px 12px; font-size: 10px; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+    .qp:hover { color: #00d4ff; border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.1); }
+
+    /* SCAN PANELS */
+    .scan-panel { padding: 24px; overflow-y: auto; flex: 1; }
+    .scan-panel h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: 3px; color: #fff; margin-bottom: 6px; }
+    .scan-panel h2 span { color: #00d4ff; }
+    .scan-desc { font-size: 11px; color: #4a6a7a; margin-bottom: 24px; letter-spacing: 1px; }
+    .scan-box { background: #071420; border: 1px solid rgba(0,212,255,0.15); padding: 24px; max-width: 700px; }
+    .scan-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .scan-input { flex: 1; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.15); color: #c8dde8; padding: 12px 14px; font-family: 'Share Tech Mono', monospace; font-size: 13px; outline: none; }
+    .scan-input:focus { border-color: #00d4ff; }
+    .scan-btn { background: #00d4ff; color: #000; border: none; padding: 12px 24px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 2px; cursor: pointer; white-space: nowrap; }
+    .scan-btn:hover { background: #fff; }
+    .scan-btn:disabled { background: #1a3a4a; color: #4a6a7a; cursor: not-allowed; }
+    .result-box { background: rgba(0,0,0,0.3); border: 1px solid rgba(0,212,255,0.1); padding: 16px; margin-top: 16px; display: none; }
+    .result-box.visible { display: block; }
+    .result-title { font-size: 10px; letter-spacing: 3px; color: #00d4ff; margin-bottom: 10px; }
+    .result-text { font-size: 12px; line-height: 1.8; color: #c8dde8; white-space: pre-wrap; }
+    .verdict { display: inline-block; padding: 4px 14px; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .verdict.safe { background: rgba(0,255,157,0.15); color: #00ff9d; border: 1px solid rgba(0,255,157,0.4); }
+    .verdict.suspicious { background: rgba(255,184,0,0.15); color: #ffb800; border: 1px solid rgba(255,184,0,0.4); }
+    .verdict.dangerous { background: rgba(255,59,59,0.15); color: #ff3b3b; border: 1px solid rgba(255,59,59,0.4); }
+    .scanning { color: #4a6a7a; font-size: 12px; padding: 10px 0; display: none; }
+    .scanning.visible { display: block; }
+    .examples { margin-top: 16px; }
+    .example-title { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; margin-bottom: 8px; }
+    .example-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.12); color: #4a6a7a; padding: 4px 10px; font-size: 10px; cursor: pointer; }
+    .chip:hover { color: #00d4ff; border-color: rgba(0,212,255,0.3); }
+
+    /* BRIEFING */
+    .briefing-content { font-size: 12px; line-height: 1.9; white-space: pre-wrap; color: #c8dde8; }
+    .gen-btn { background: transparent; border: 1px solid rgba(0,212,255,0.3); color: #00d4ff; padding: 10px 24px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 2px; cursor: pointer; margin-bottom: 20px; transition: all 0.2s; }
+    .gen-btn:hover { background: rgba(0,212,255,0.1); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="back" href="../index.html">← BACK</a>
+    <div class="logo">◉ SENTINEL AI</div>
+  </div>
+  <div class="status"><div class="dot"></div> GEMINI ENGINE ONLINE</div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('chat')">💬 AI CHAT</div>
+  <div class="tab" onclick="switchTab('phishing')">🎣 PHISHING SCANNER</div>
+  <div class="tab" onclick="switchTab('vuln')">🔍 VULNERABILITY SCAN</div>
+  <div class="tab" onclick="switchTab('briefing')">📋 THREAT BRIEFING</div>
+  <div class="tab" onclick="switchTab('ioc')">🔎 IOC ANALYSER</div>
+</div>
+
+<div class="content">
+
+  <!-- CHAT TAB -->
+  <div class="tab-panel active" id="tab-chat">
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg ai">
+        <div class="msg-label">SENTINEL AI</div>
+        SENTINEL AI online. I am your classified cyber threat intelligence assistant powered by Gemini. I can help with threat analysis, phishing detection, vulnerability assessment, incident response, and more. How can I assist?
+      </div>
+    </div>
+    <div class="quick-prompts">
+      <div class="qp" onclick="quickPrompt('What are the latest ransomware TTPs?')">Ransomware TTPs</div>
+      <div class="qp" onclick="quickPrompt('How do I contain a lateral movement attack?')">Lateral Movement</div>
+      <div class="qp" onclick="quickPrompt('What indicators suggest an insider threat?')">Insider Threats</div>
+      <div class="qp" onclick="quickPrompt('Explain zero-day exploit mitigation steps')">Zero-day Mitigation</div>
+      <div class="qp" onclick="quickPrompt('What is the MITRE ATT&CK framework?')">MITRE ATT&CK</div>
+      <div class="qp" onclick="quickPrompt('How to perform incident triage?')">Incident Triage</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" placeholder="Ask SENTINEL AI anything about cyber threats...">
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">SEND</button>
+    </div>
+  </div>
+
+  <!-- PHISHING SCANNER -->
+  <div class="tab-panel" id="tab-phishing">
+    <div class="scan-panel">
+      <h2>PHISHING <span>SCANNER</span></h2>
+      <div class="scan-desc">AI-POWERED URL & EMAIL PHISHING DETECTION // GEMINI ANALYSIS ENGINE</div>
+      <div class="scan-box">
+        <div class="scan-row">
+          <input class="scan-input" id="phish-input" placeholder="Enter URL to scan... e.g. http://paypa1-secure.com/login">
+          <button class="scan-btn" id="phish-btn" onclick="scanPhishing()">⚡ SCAN URL</button>
+        </div>
+        <div class="scanning" id="phish-scanning">◉ Analysing URL with AI engine...</div>
+        <div class="result-box" id="phish-result">
+          <div class="result-title">PHISHING ANALYSIS REPORT</div>
+          <div class="result-text" id="phish-text"></div>
+        </div>
+        <div class="examples">
+          <div class="example-title">TEST WITH THESE EXAMPLES:</div>
+          <div class="example-chips">
+            <div class="chip" onclick="setPhish('http://paypa1-secure-login.com/verify')">paypa1-secure-login.com</div>
+            <div class="chip" onclick="setPhish('https://google.com')">google.com</div>
+            <div class="chip" onclick="setPhish('http://amazon-account-suspended.tk/login')">amazon-suspended.tk</div>
+            <div class="chip" onclick="setPhish('http://micros0ft-update.xyz/windows')">micros0ft-update.xyz</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULNERABILITY SCAN -->
+  <div class="tab-panel" id="tab-vuln">
+    <div class="scan-panel">
+      <h2>VULNERABILITY <span>ASSESSMENT</span></h2>
+      <div class="scan-desc">AI-POWERED ATTACK SURFACE ANALYSIS // AUTHORISED DEFENSIVE USE ONLY</div>
+      <div class="scan-box">
+        <div class="scan-row">
+          <input class="scan-input" id="vuln-input" placeholder="Enter system, service or domain... e.g. Apache 2.4.49, OpenSSH 7.2">
+          <button class="scan-btn" id="vuln-btn" onclick="scanVuln()">🔍 ANALYSE</button>
+        </div>
+        <div class="scanning" id="vuln-scanning">◉ Running vulnerability analysis...</div>
+        <div class="result-box" id="vuln-result">
+          <div class="result-title">VULNERABILITY ASSESSMENT REPORT</div>
+          <div class="result-text" id="vuln-text"></div>
+        </div>
+        <div class="examples">
+          <div class="example-title">EXAMPLE TARGETS:</div>
+          <div class="example-chips">
+            <div class="chip" onclick="setVuln('Apache 2.4.49 web server')">Apache 2.4.49</div>
+            <div class="chip" onclick="setVuln('OpenSSH 7.2 on Ubuntu 16.04')">OpenSSH 7.2</div>
+            <div class="chip" onclick="setVuln('Windows Server 2012 R2 unpatched')">Windows Server 2012</div>
+            <div class="chip" onclick="setVuln('WordPress 5.0 with default plugins')">WordPress 5.0</div>
+            <div class="chip" onclick="setVuln('Cisco IOS 12.4 router')">Cisco IOS 12.4</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BRIEFING TAB -->
+  <div class="tab-panel" id="tab-briefing">
+    <div class="scan-panel">
+      <h2>THREAT <span>BRIEFING</span></h2>
+      <div class="scan-desc">AI-GENERATED TACTICAL INTELLIGENCE BRIEFING BASED ON ACTIVE INCIDENTS</div>
+      <button class="gen-btn" onclick="generateBriefing()">⚡ GENERATE BRIEFING</button>
+      <div class="scanning" id="brief-scanning">◉ Generating tactical briefing...</div>
+      <div class="result-box" id="brief-result">
+        <div class="result-title">TACTICAL THREAT INTELLIGENCE BRIEFING</div>
+        <div class="briefing-content" id="brief-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IOC ANALYSER -->
+  <div class="tab-panel" id="tab-ioc">
+    <div class="scan-panel">
+      <h2>IOC <span>ANALYSER</span></h2>
+      <div class="scan-desc">INDICATOR OF COMPROMISE ANALYSIS — IP, HASH, DOMAIN, EMAIL</div>
+      <div class="scan-box">
+        <div class="scan-row">
+          <input class="scan-input" id="ioc-input" placeholder="Enter IOC... IP, domain, file hash, email address">
+          <button class="scan-btn" id="ioc-btn" onclick="analyseIOC()">🔎 ANALYSE IOC</button>
+        </div>
+        <div class="scanning" id="ioc-scanning">◉ Analysing indicator of compromise...</div>
+        <div class="result-box" id="ioc-result">
+          <div class="result-title">IOC ANALYSIS REPORT</div>
+          <div class="result-text" id="ioc-text"></div>
+        </div>
+        <div class="examples">
+          <div class="example-title">EXAMPLE IOCs:</div>
+          <div class="example-chips">
+            <div class="chip" onclick="setIOC('185.220.101.45')">185.220.101.45 (IP)</div>
+            <div class="chip" onclick="setIOC('44d88612fea8a8f36de82e1278abb02f')">MD5 Hash</div>
+            <div class="chip" onclick="setIOC('malware-c2.ru')">malware-c2.ru</div>
+            <div class="chip" onclick="setIOC('phishing@secure-paypal.xyz')">Phishing email</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const token = localStorage.getItem('sentinel_token');
+  if (!token) window.location.href = 'login.html';
+
+  const API = 'http://localhost:5000/api';
+  const messages = [];
+
+  // TAB SWITCHING
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  // CHAT
+  async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('send-btn');
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendMsg('user', 'YOU', text);
+    messages.push({ role: 'user', content: text });
+    input.value = '';
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    const thinking = appendMsg('ai', 'SENTINEL AI', '⚙ Processing...');
+
+    try {
+      const res = await fetch(API + '/ai/chat', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages })
+      });
+      const data = await res.json();
+      thinking.querySelector('.msg-label').nextSibling && (thinking.innerHTML = `<div class="msg-label">SENTINEL AI</div>${data.reply}`);
+      thinking.innerHTML = `<div class="msg-label">SENTINEL AI</div>${data.reply.replace(/\n/g, '<br>')}`;
+      messages.push({ role: 'assistant', content: data.reply });
+    } catch (err) {
+      thinking.innerHTML = `<div class="msg-label">SENTINEL AI</div>⚠ Connection error. Check server is running.`;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'SEND';
+    document.getElementById('chat-messages').scrollTop = 99999;
+  }
+
+  function appendMsg(role, label, text) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.innerHTML = `<div class="msg-label">${label}</div>${text}`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+
+  function quickPrompt(text) {
+    document.getElementById('chat-input').value = text;
+    sendMessage();
+  }
+
+  document.getElementById('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) sendMessage();
+  });
+
+  // PHISHING SCAN
+  function setPhish(url) { document.getElementById('phish-input').value = url; }
+
+  async function scanPhishing() {
+    const url = document.getElementById('phish-input').value.trim();
+    if (!url) return;
+    const btn = document.getElementById('phish-btn');
+    btn.disabled = true;
+    document.getElementById('phish-scanning').classList.add('visible');
+    document.getElementById('phish-result').classList.remove('visible');
+
+    try {
+      const res = await fetch(API + '/ai/phishing-scan', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      document.getElementById('phish-text').textContent = data.result;
+      document.getElementById('phish-result').classList.add('visible');
+    } catch (err) {
+      document.getElementById('phish-text').textContent = 'Scan failed: ' + err.message;
+      document.getElementById('phish-result').classList.add('visible');
+    }
+
+    btn.disabled = false;
+    document.getElementById('phish-scanning').classList.remove('visible');
+  }
+
+  // VULNERABILITY SCAN
+  function setVuln(t) { document.getElementById('vuln-input').value = t; }
+
+  async function scanVuln() {
+    const target = document.getElementById('vuln-input').value.trim();
+    if (!target) return;
+    const btn = document.getElementById('vuln-btn');
+    btn.disabled = true;
+    document.getElementById('vuln-scanning').classList.add('visible');
+    document.getElementById('vuln-result').classList.remove('visible');
+
+    try {
+      const res = await fetch(API + '/ai/vuln-scan', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target })
+      });
+      const data = await res.json();
+      document.getElementById('vuln-text').textContent = data.result;
+      document.getElementById('vuln-result').classList.add('visible');
+    } catch (err) {
+      document.getElementById('vuln-text').textContent = 'Scan failed: ' + err.message;
+      document.getElementById('vuln-result').classList.add('visible');
+    }
+
+    btn.disabled = false;
+    document.getElementById('vuln-scanning').classList.remove('visible');
+  }
+
+  // IOC ANALYSER
+  function setIOC(ioc) { document.getElementById('ioc-input').value = ioc; }
+
+  async function analyseIOC() {
+    const ioc = document.getElementById('ioc-input').value.trim();
+    if (!ioc) return;
+    const btn = document.getElementById('ioc-btn');
+    btn.disabled = true;
+    document.getElementById('ioc-scanning').classList.add('visible');
+    document.getElementById('ioc-result').classList.remove('visible');
+
+    try {
+      const res = await fetch(API + '/ai/chat', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: `Analyse this Indicator of Compromise (IOC) for the Ministry of Defence cyber team: "${ioc}". Provide: IOC TYPE, THREAT LEVEL, KNOWN ASSOCIATIONS (threat actors/malware families), RECOMMENDED ACTION, HUNTING QUERIES (SIEM/log patterns to look for).` }] })
+      });
+      const data = await res.json();
+      document.getElementById('ioc-text').textContent = data.reply;
+      document.getElementById('ioc-result').classList.add('visible');
+    } catch (err) {
+      document.getElementById('ioc-text').textContent = 'Analysis failed: ' + err.message;
+      document.getElementById('ioc-result').classList.add('visible');
+    }
+
+    btn.disabled = false;
+    document.getElementById('ioc-scanning').classList.remove('visible');
+  }
+
+  // BRIEFING
+  async function generateBriefing() {
+    document.getElementById('brief-scanning').classList.add('visible');
+    document.getElementById('brief-result').classList.remove('visible');
+
+    try {
+      const res = await fetch(API + '/ai/briefing', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      document.getElementById('brief-text').textContent = data.briefing;
+      document.getElementById('brief-result').classList.add('visible');
+    } catch (err) {
+      document.getElementById('brief-text').textContent = 'Failed: ' + err.message;
+      document.getElementById('brief-result').classList.add('visible');
+    }
+
+    document.getElementById('brief-scanning').classList.remove('visible');
+  }
+</script>
+</body>
+</html>

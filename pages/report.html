@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Report Incident</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030a0f; color: #c8dde8; font-family: 'Share Tech Mono', monospace; padding: 32px; }
+    .back { color: #4a6a7a; font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+    .back:hover { color: #00d4ff; }
+    h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: #fff; letter-spacing: 3px; margin-bottom: 4px; }
+    h1 span { color: #00d4ff; }
+    .sub { font-size: 10px; letter-spacing: 3px; color: #4a6a7a; margin-bottom: 28px; }
+    .panel { background: #071420; border: 1px solid rgba(0,212,255,0.15); padding: 28px; max-width: 700px; }
+    .panel-title { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; letter-spacing: 2px; color: #fff; margin-bottom: 20px; border-bottom: 1px solid rgba(0,212,255,0.1); padding-bottom: 12px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-label { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; }
+    .form-input, .form-select, .form-textarea {
+      background: rgba(0,212,255,0.04);
+      border: 1px solid rgba(0,212,255,0.15);
+      color: #c8dde8;
+      padding: 10px 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      width: 100%;
+    }
+    .form-textarea { height: 90px; resize: none; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #00d4ff; }
+    .form-select option { background: #071420; }
+    .submit-btn {
+      width: 100%;
+      background: #00d4ff;
+      color: #000;
+      border: none;
+      padding: 13px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .submit-btn:hover { background: #fff; box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+    .success-msg { background: rgba(0,255,157,0.1); border: 1px solid rgba(0,255,157,0.3); color: #00ff9d; padding: 12px; margin-top: 14px; font-size: 12px; display: none; }
+    .error-msg { background: rgba(255,59,59,0.1); border: 1px solid rgba(255,59,59,0.3); color: #ff3b3b; padding: 12px; margin-top: 14px; font-size: 12px; display: none; }
+    .ai-result { background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.2); padding: 14px; margin-top: 14px; display: none; }
+    .ai-result-title { font-size: 10px; letter-spacing: 2px; color: #00d4ff; margin-bottom: 8px; }
+    .ai-result-text { font-size: 11px; line-height: 1.7; color: #c8dde8; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../index.html">← BACK TO DASHBOARD</a>
+  <div class="sub">CYBER COMMAND // REPORTING</div>
+  <h1>REPORT <span>INCIDENT</span></h1>
+
+  <div class="panel">
+    <div class="panel-title">INCIDENT REPORT FORM — ALL FIELDS ENCRYPTED IN TRANSIT</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">REPORTER NAME</label>
+        <input class="form-input" id="r-name" placeholder="Full name...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">UNIT / DIVISION</label>
+        <input class="form-input" id="r-unit" placeholder="e.g. Cyber Wing Alpha">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">INCIDENT TYPE</label>
+        <select class="form-select" id="r-type">
+          <option value="">Select type...</option>
+          <option>Malware / Ransomware</option>
+          <option>Phishing / Social Engineering</option>
+          <option>Unauthorized Access</option>
+          <option>Data Exfiltration</option>
+          <option>DDoS / Service Disruption</option>
+          <option>Brute Force</option>
+          <option>Lateral Movement</option>
+          <option>Insider Threat</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SEVERITY</label>
+        <select class="form-select" id="r-severity">
+          <option value="">Select severity...</option>
+          <option value="critical">Critical — Immediate response</option>
+          <option value="high">High — Urgent response</option>
+          <option value="medium">Medium — Standard response</option>
+          <option value="low">Low — Monitor</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">AFFECTED ASSET / SYSTEM</label>
+      <input class="form-input" id="r-asset" placeholder="e.g. NODE-BRAVO-7, VPN-GW-01...">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">INCIDENT DESCRIPTION</label>
+      <textarea class="form-textarea" id="r-desc" placeholder="Describe the incident in detail..."></textarea>
+    </div>
+
+    <button class="submit-btn" onclick="submitReport()">⚡ SUBMIT & TRIGGER AI ANALYSIS</button>
+    <div class="success-msg" id="success-msg"></div>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="ai-result" id="ai-result">
+      <div class="ai-result-title">◉ AI THREAT ANALYSIS</div>
+      <div class="ai-result-text" id="ai-result-text"></div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('sentinel_token');
+    if (!token) window.location.href = 'login.html';
+
+    async function submitReport() {
+      const type = document.getElementById('r-type').value;
+      const severity = document.getElementById('r-severity').value;
+      const asset = document.getElementById('r-asset').value;
+      const description = document.getElementById('r-desc').value;
+      const errDiv = document.getElementById('error-msg');
+      const sucDiv = document.getElementById('success-msg');
+
+      if (!type || !severity || !description) {
+        errDiv.style.display = 'block'; errDiv.textContent = '⚠ Please fill in all required fields.'; return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:5000/api/incidents', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, severity, affected_asset: asset, description })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        sucDiv.style.display = 'block';
+        sucDiv.textContent = '✅ Incident ' + data.incident_number + ' submitted. AI analysis triggered.';
+        errDiv.style.display = 'none';
+
+        // Poll for AI analysis
+        setTimeout(() => pollAI(data.id), 3000);
+      } catch (err) {
+        errDiv.style.display = 'block'; errDiv.textContent = '⚠ ' + err.message;
+      }
+    }
+
+    async function pollAI(id) {
+      const res = await fetch('http://localhost:5000/api/incidents/' + id, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (data.ai_analysis) {
+        document.getElementById('ai-result').style.display = 'block';
+        document.getElementById('ai-result-text').textContent = data.ai_analysis;
+      }
+    }
+  </script>
+</body>
+</html>

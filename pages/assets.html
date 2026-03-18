@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Assets</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030a0f; color: #c8dde8; font-family: 'Share Tech Mono', monospace; padding: 32px; }
+    .back { color: #4a6a7a; font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+    .back:hover { color: #00d4ff; }
+    h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: #fff; letter-spacing: 3px; margin-bottom: 24px; }
+    h1 span { color: #00d4ff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .asset-card { background: #071420; border: 1px solid rgba(0,212,255,0.15); padding: 20px; transition: all 0.2s; }
+    .asset-card:hover { border-color: rgba(0,212,255,0.35); transform: translateY(-2px); }
+    .asset-name { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: #00d4ff; letter-spacing: 2px; margin-bottom: 8px; }
+    .asset-type { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; margin-bottom: 14px; }
+    .asset-ip { font-size: 12px; color: #c8dde8; margin-bottom: 12px; }
+    .health-bar { height: 4px; background: rgba(255,255,255,0.05); margin-bottom: 6px; }
+    .health-fill { height: 100%; transition: width 1s; }
+    .health-label { font-size: 10px; display: flex; justify-content: space-between; color: #4a6a7a; }
+    .status-badge { display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 700; margin-top: 10px; }
+    .online { background: rgba(0,255,157,0.1); color: #00ff9d; border: 1px solid rgba(0,255,157,0.3); }
+    .warning { background: rgba(255,184,0,0.1); color: #ffb800; border: 1px solid rgba(255,184,0,0.3); }
+    .compromised { background: rgba(255,59,59,0.1); color: #ff3b3b; border: 1px solid rgba(255,59,59,0.3); }
+    .loading { color: #4a6a7a; text-align: center; padding: 40px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../index.html">← BACK TO DASHBOARD</a>
+  <h1>MONITORED <span>ASSETS</span></h1>
+  <div class="grid" id="assets-grid">
+    <div class="loading">Loading assets...</div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('sentinel_token');
+    if (!token) window.location.href = 'login.html';
+
+    async function loadAssets() {
+      const res = await fetch('http://localhost:5000/api/assets', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      const grid = document.getElementById('assets-grid');
+      grid.innerHTML = data.map(a => {
+        const color = a.health_score > 80 ? '#00ff9d' : a.health_score > 50 ? '#ffb800' : '#ff3b3b';
+        return `
+        <div class="asset-card">
+          <div class="asset-name">${a.name}</div>
+          <div class="asset-type">${a.type || 'UNKNOWN'}</div>
+          <div class="asset-ip">IP: ${a.ip_address || 'N/A'}</div>
+          <div class="health-bar"><div class="health-fill" style="width:${a.health_score}%;background:${color}"></div></div>
+          <div class="health-label"><span>HEALTH</span><span>${a.health_score}%</span></div>
+          <span class="status-badge ${a.status}">${a.status.toUpperCase()}</span>
+        </div>`;
+      }).join('');
+    }
+    loadAssets();
+  </script>
+</body>
+</html>

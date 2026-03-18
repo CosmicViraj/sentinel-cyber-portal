@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL — MoD Cyber Incident & Safety Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #030a0f;
+    --surface: #071420;
+    --surface2: #0d1f30;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --danger: #ff3b3b;
+    --warn: #ffb800;
+    --text: #c8dde8;
+    --text-dim: #4a6a7a;
+    --border: rgba(0,212,255,0.15);
+    --glow: 0 0 20px rgba(0,212,255,0.3);
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* SCANLINES OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* GRID BACKGROUND */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 48px;
+    background: rgba(3,10,15,0.95);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-shadow: var(--glow);
+  }
+
+  .logo span { color: #fff; }
+
+  .classification {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    letter-spacing: 2px;
+    animation: blink 2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 90%, 100% { opacity: 1; }
+    95% { opacity: 0.3; }
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse-green 2s infinite;
+  }
+
+  @keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(0,255,157,0); }
+  }
+
+  .clock { color: var(--accent); }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 48px; bottom: 0;
+    width: 220px;
+    background: rgba(7,20,32,0.95);
+    border-right: 1px solid var(--border);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    backdrop-filter: blur(10px);
+  }
+
+  .nav-section {
+    padding: 6px 16px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-top: 12px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+    text-decoration: none;
+  }
+
+  .nav-item:hover, .nav-item.active {
+    color: var(--accent);
+    background: rgba(0,212,255,0.05);
+    border-left-color: var(--accent);
+  }
+
+  .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--danger);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    animation: blink 3s infinite;
+  }
+
+  .nav-badge.warn { background: var(--warn); color: #000; animation: none; }
+
+  /* MAIN CONTENT */
+  .main {
+    margin-left: 220px;
+    margin-top: 48px;
+    padding: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* PAGE HEADER */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    font-weight: 300;
+    margin-bottom: 4px;
+    font-family: var(--font-mono);
+  }
+
+  .page-heading {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .page-heading span { color: var(--accent); }
+
+  /* ALERT BANNER */
+  .alert-banner {
+    background: linear-gradient(90deg, rgba(255,59,59,0.15), rgba(255,59,59,0.05));
+    border: 1px solid rgba(255,59,59,0.4);
+    border-left: 4px solid var(--danger);
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slide-in 0.5s ease;
+  }
+
+  @keyframes slide-in {
+    from { transform: translateX(-10px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .alert-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--danger);
+    white-space: nowrap;
+  }
+
+  .alert-text {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #fff;
+    flex: 1;
+  }
+
+  .alert-time {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  /* STAT CARDS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.blue::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--accent2); }
+  .stat-card.red::before { background: var(--danger); }
+  .stat-card.warn::before { background: var(--warn); }
+
+  .stat-card:hover {
+    border-color: rgba(0,212,255,0.3);
+    transform: translateY(-2px);
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .stat-number {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-card.blue .stat-number { color: var(--accent); }
+  .stat-card.green .stat-number { color: var(--accent2); }
+  .stat-card.red .stat-number { color: var(--danger); }
+  .stat-card.warn .stat-number { color: var(--warn); }
+
+  .stat-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .stat-sub .up { color: var(--danger); }
+  .stat-sub .down { color: var(--accent2); }
+
+  /* MAIN GRID */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* PANEL */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  .panel-subtitle {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .panel-action {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 1px solid rgba(0,212,255,0.3);
+    transition: all 0.2s;
+  }
+
+  .panel-action:hover { background: rgba(0,212,255,0.1); }
+
+  .panel-body { padding: 18px; }
+
+  /* INCIDENT TABLE */
+  .incident-table { width: 100%; border-collapse: collapse; }
+
+  .incident-table th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .incident-table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    font-size: 13px;
+    font-family: var(--font-mono);
+    vertical-align: middle;
+  }
+
+  .incident-table tr:hover td { background: rgba(0,212,255,0.04); }
+
+  .severity {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .severity.critical { background: rgba(255,59,59,0.2); color: var(--danger); border: 1px solid rgba(255,59,59,0.4); }
+  .severity.high { background: rgba(255,184,0,0.15); color: var(--warn); border: 1px solid rgba(255,184,0,0.3); }
+  .severity.medium { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
+  .severity.low { background: rgba(0,255,157,0.1); color: var(--accent2); border: 1px solid rgba(0,255,157,0.2); }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-dot-sm {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+
+  .status-dot-sm.active { background: var(--danger); animation: blink 1.5s infinite; }
+  .status-dot-sm.investigating { background: var(--warn); }
+  .status-dot-sm.resolved { background: var(--accent2); }
+
+  /* THREAT MAP */
+  .threat-map-container {
+    position: relative;
+    height: 220px;
+    background: rgba(0,20,40,0.5);
+    overflow: hidden;
+  }
+
+  #threat-canvas { width: 100%; height: 100%; }
+
+  /* AI FEED */
+  .ai-feed { max-height: 340px; overflow-y: auto; }
+
+  .ai-feed::-webkit-scrollbar { width: 4px; }
+  .ai-feed::-webkit-scrollbar-track { background: transparent; }
+  .ai-feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .feed-item {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .feed-icon {
+    width: 28px; height: 28px;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .feed-icon.ai { background: rgba(0,212,255,0.15); }
+  .feed-icon.alert { background: rgba(255,59,59,0.15); }
+  .feed-icon.ok { background: rgba(0,255,157,0.1); }
+
+  .feed-content { flex: 1; }
+
+  .feed-msg {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+
+  .feed-meta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  /* BOTTOM GRID */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* BAR CHART */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+
+  .bar-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    transition: width 1s ease;
+    border-radius: 0;
+  }
+
+  .bar-val {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    width: 30px;
+    text-align: right;
+  }
+
+  /* INCIDENT REPORT FORM */
+  .report-form { display: flex; flex-direction: column; gap: 12px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+
+  .form-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .form-input, .form-select, .form-textarea {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .form-textarea { resize: none; height: 70px; }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.07);
+  }
+
+  .form-select { cursor: pointer; }
+
+  .form-select option { background: var(--surface); }
+
+  .submit-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 10px 18px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    width: 100%;
+  }
+
+  .submit-btn:hover {
+    background: #fff;
+    box-shadow: 0 0 20px rgba(0,212,255,0.5);
+  }
+
+  /* AI ANALYSIS BOX */
+  .ai-box {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 12px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .ai-box.visible { display: block; animation: slide-in 0.3s ease; }
+
+  .ai-box-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .ai-box-text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* TYPING CURSOR */
+  .typing::after {
+    content: '▌';
+    animation: cursor 0.8s infinite;
+    color: var(--accent);
+  }
+
+  @keyframes cursor {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* MINI SPARKLINE */
+  .sparkline { display: flex; align-items: flex-end; gap: 3px; height: 32px; margin-top: 8px; }
+  .spark-bar { flex: 1; border-radius: 1px; transition: height 0.5s; }
+
+  /* MAP */
+  .world-map-placeholder {
+    width: 100%;
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* NODE PULSE */
+  .map-node {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    transform: translate(-50%,-50%);
+  }
+
+  .map-node::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.4;
+    animation: ripple 2s infinite;
+  }
+
+  @keyframes ripple {
+    0% { transform: scale(0.5); opacity: 0.6; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* FOOTER */
+  .footer-bar {
+    margin-left: 220px;
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(3,10,15,0.9);
+  }
+
+  .footer-text {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .scroll-ticker {
+    overflow: hidden;
+    width: 500px;
+    height: 16px;
+  }
+
+  .ticker-content {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    white-space: nowrap;
+    animation: ticker 25s linear infinite;
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(500px); }
+    to { transform: translateX(-100%); }
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 1200px) {
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .content-grid { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">SENT<span>IN</span>EL</div>
+    <div class="classification">RESTRICTED // MoD USE ONLY</div>
+  </div>
+  <div class="topbar-right">
+    <span><span class="status-dot"></span>AI ENGINE ONLINE</span>
+    <span>CLEARANCE: LEVEL 3</span>
+    <span class="clock" id="clock">--:--:-- UTC</span>
+    <span>SGT. R. SHARMA ▼</span>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="nav-section">OPERATIONS</div>
+  <a class="nav-item active" href="../index.html">
+    <span class="nav-icon">▦</span> Dashboard
+  </a>
+  <a class="nav-item" href="pages/incidents.html">
+    <span class="nav-icon">⚠</span> Incidents
+    <span class="nav-badge">4</span>
+  </a>
+  <a class="nav-item" href="pages/report.html">
+    <span class="nav-icon">✦</span> Report Incident
+  </a>
+
+  <div class="nav-section">INTELLIGENCE</div>
+  <a class="nav-item" href="pages/threats.html">
+    <span class="nav-icon">◈</span> Threat Map
+  </a>
+  <a class="nav-item" href="pages/ai-chat.html">
+    <span class="nav-icon">◉</span> AI Analysis
+    <span class="nav-badge warn">2</span>
+  </a>
+
+  <div class="nav-section">SAFETY</div>
+  <a class="nav-item" href="pages/protocols.html">
+    <span class="nav-icon">◧</span> Protocols
+  </a>
+  <a class="nav-item" href="pages/assets.html">
+    <span class="nav-icon">◫</span> Assets
+  </a>
+
+  <div class="nav-section">ADMIN</div>
+  <a class="nav-item" href="pages/audit.html">
+    <span class="nav-icon">≡</span> Audit Log
+  </a>
+  <a class="nav-item" href="pages/settings.html">
+    <span class="nav-icon">⚙</span> Settings
+  </a>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div id="section-dashboard" class="section active">
+
+    <div class="alert-banner">
+      <div class="alert-tag">● ACTIVE THREAT</div>
+      <div class="alert-text">AI Engine detected anomalous network activity on NODE-BRAVO-7 — possible lateral movement. Automated quarantine initiated.</div>
+      <div class="alert-time" id="alert-time">14:32:07 UTC</div>
+    </div>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">MINISTRY OF DEFENCE // CYBER COMMAND</div>
+        <div class="page-heading">THREAT <span>OVERVIEW</span></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">LAST SYNC</div>
+        <div style="font-family:var(--font-mono);font-size:13px;color:var(--accent2);" id="sync-time">14:32:07 UTC</div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card red">
+        <div class="stat-label">ACTIVE INCIDENTS</div>
+        <div class="stat-number" id="stat-active">4</div>
+        <div class="stat-sub"><span class="up">↑2</span> from last 24h</div>
+        <div class="sparkline" id="spark-1"></div>
+      </div>
+      <div class="stat-card warn">
+        <div class="stat-label">THREATS DETECTED</div>
+        <div class="stat-number" id="stat-threats">127</div>
+        <div class="stat-sub">This week</div>
+        <div class="sparkline" id="spark-2"></div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">THREATS NEUTRALISED</div>
+        <div class="stat-number" id="stat-neutral">119</div>
+        <div class="stat-sub"><span class="down">93.7%</span> resolution rate</div>
+        <div class="sparkline" id="spark-3"></div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">SYSTEMS MONITORED</div>
+        <div class="stat-number" id="stat-systems">348</div>
+        <div class="stat-sub">Across 6 installations</div>
+        <div class="sparkline" id="spark-4"></div>
+      </div>
+    </div>
+
+    <!-- CONTENT GRID -->
+    <div class="content-grid">
+      <!-- INCIDENTS TABLE -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Recent Incidents</div>
+            <div class="panel-subtitle">AI-TRIAGED // AUTO-SORTED BY SEVERITY</div>
+          </div>
+          <div class="panel-action" onclick="showSection('incidents')">VIEW ALL →</div>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table class="incident-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TYPE</th>
+                <th>SEVERITY</th>
+                <th>ASSET</th>
+                <th>STATUS</th>
+                <th>TIME</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="color:var(--accent)">INC-2247</td>
+                <td>Lateral Movement</td>
+                <td><span class="severity critical">CRITICAL</span></td>
+                <td>NODE-BRAVO-7</td>
+                <td><span class="status-badge"><span class="status-dot-sm active"></span>Active</span></td>
+                <td>14:30</td>
+              </tr>
+              <tr>
+                <td style="color:var(--accent)">INC-2246</td>
+                <td>Phishing Attempt</td>
+                <td><span class="severity high">HIGH</span></td>
+                <td>MAIL-SRV-02</td>
+                <td><span class="status-badge"><span class="status-dot-sm investigating"></span>Investigating</span></td>
+                <td>13:57</td>
+              </tr>
+              <tr>
+                <td style="color:var(--accent)">INC-2245</td>
+                <td>Brute Force</td>
+                <td><span class="severity high">HIGH</span></td>
+                <td>VPN-GW-01</td>
+                <td><span class="status-badge"><span class="status-dot-sm active"></span>Active</span></td>
+                <td>13:22</td>
+              </tr>
+              <tr>
+                <td style="color:var(--accent)">INC-2244</td>
+                <td>Data Exfil Attempt</td>
+                <td><span class="severity medium">MEDIUM</span></td>
+                <td>FILE-SRV-04</td>
+                <td><span class="status-badge"><span class="status-dot-sm investigating"></span>Investigating</span></td>
+                <td>12:44</td>
+              </tr>
+              <tr>
+                <td style="color:var(--accent)">INC-2243</td>
+                <td>Port Scan</td>
+                <td><span class="severity low">LOW</span></td>
+                <td>NET-PERIMETER</td>
+                <td><span class="status-badge"><span class="status-dot-sm resolved"></span>Resolved</span></td>
+                <td>11:15</td>
+              </tr>
+              <tr>
+                <td style="color:var(--accent)">INC-2242</td>
+                <td>Malware Signature</td>
+                <td><span class="severity medium">MEDIUM</span></td>
+                <td>WS-ALPHA-14</td>
+                <td><span class="status-badge"><span class="status-dot-sm resolved"></span>Resolved</span></td>
+                <td>09:38</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: AI FEED -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">AI Intelligence Feed</div>
+            <div class="panel-subtitle">REAL-TIME ANALYSIS</div>
+          </div>
+        </div>
+        <div class="panel-body" style="padding:10px 14px">
+          <div class="ai-feed" id="ai-feed">
+            <!-- dynamically filled -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="bottom-grid">
+
+      <!-- ATTACK TYPES -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Attack Vectors</div>
+        </div>
+        <div class="panel-body">
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+      </div>
+
+      <!-- THREAT MAP -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Origin Map</div>
+          <div class="panel-subtitle">LAST 6H</div>
+        </div>
+        <div class="panel-body" style="padding:10px">
+          <div class="world-map-placeholder" id="map-container">
+            <canvas id="map-canvas" style="width:100%;height:100%"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM HEALTH -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">System Health</div>
+        </div>
+        <div class="panel-body">
+          <div style="display:flex;flex-direction:column;gap:14px" id="health-grid"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- REPORT INCIDENT -->
+  <div id="section-report" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">CYBER COMMAND // REPORTING</div>
+        <div class="page-heading">REPORT <span>INCIDENT</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 400px;gap:16px">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Incident Report Form</div>
+          <div class="panel-subtitle">ALL FIELDS ENCRYPTED IN TRANSIT</div>
+        </div>
+        <div class="panel-body">
+          <div class="report-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">REPORTER NAME</label>
+                <input class="form-input" placeholder="Full name..." id="r-name">
+              </div>
+              <div class="form-group">
+                <label class="form-label">UNIT / DIVISION</label>
+                <input class="form-input" placeholder="e.g. Cyber Wing Alpha">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">INCIDENT TYPE</label>
+                <select class="form-select" id="r-type">
+                  <option>Select type...</option>
+                  <option>Malware / Ransomware</option>
+                  <option>Phishing / Social Engineering</option>
+                  <option>Unauthorized Access</option>
+                  <option>Data Exfiltration</option>
+                  <option>DDoS / Service Disruption</option>
+                  <option>Physical Security Breach</option>
+                  <option>Insider Threat</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">SEVERITY</label>
+                <select class="form-select" id="r-severity">
+                  <option>Select severity...</option>
+                  <option>Critical — Immediate response</option>
+                  <option>High — Urgent response</option>
+                  <option>Medium — Standard response</option>
+                  <option>Low — Monitor</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">AFFECTED ASSET / SYSTEM</label>
+              <input class="form-input" placeholder="Hostname, IP, asset ID...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">INCIDENT DESCRIPTION</label>
+              <textarea class="form-textarea" placeholder="Describe what happened, when, and how it was discovered..." id="r-desc"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">DATE / TIME OBSERVED</label>
+                <input class="form-input" type="datetime-local">
+              </div>
+              <div class="form-group">
+                <label class="form-label">LOCATION / INSTALLATION</label>
+                <input class="form-input" placeholder="Base / installation name">
+              </div>
+            </div>
+            <button class="submit-btn" onclick="submitReport()">▶ SUBMIT & ANALYSE WITH AI</button>
+          </div>
+
+          <div class="ai-box" id="ai-result">
+            <div class="ai-box-title">◉ AI THREAT ASSESSMENT</div>
+            <div class="ai-box-text typing" id="ai-result-text"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Quick Actions</div></div>
+          <div class="panel-body" style="display:flex;flex-direction:column;gap:8px">
+            <button class="submit-btn" style="background:rgba(255,59,59,0.15);color:var(--danger);font-size:12px">🔴 DECLARE MAJOR INCIDENT</button>
+            <button class="submit-btn" style="background:rgba(255,184,0,0.1);color:var(--warn);font-size:12px">⚠ ESCALATE TO COMMAND</button>
+            <button class="submit-btn" style="background:rgba(0,212,255,0.08);color:var(--accent);font-size:12px">◈ REQUEST AI DEEP ANALYSIS</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Reporting Guidelines</div></div>
+          <div class="panel-body">
+            <div style="display:flex;flex-direction:column;gap:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);line-height:1.6">
+              <div style="border-left:2px solid var(--danger);padding-left:10px;color:var(--text)">Report Critical/High incidents immediately — do not wait</div>
+              <div style="border-left:2px solid var(--warn);padding-left:10px">Preserve all evidence and logs before remediation</div>
+              <div style="border-left:2px solid var(--accent);padding-left:10px">Do not discuss incident over unsecured channels</div>
+              <div style="border-left:2px solid var(--accent2);padding-left:10px">AI analysis is advisory — human review required for all Critical</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTHER SECTIONS (stubs) -->
+  <div id="section-incidents" class="section">
+    <div class="page-header"><div><div class="page-title">CYBER COMMAND</div><div class="page-heading">ALL <span>INCIDENTS</span></div></div></div>
+    <div class="panel"><div class="panel-body" style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:40px;text-align:center">FULL INCIDENT REGISTRY — 246 RECORDS LOADED<br><br><span style="color:var(--accent)">Use the Report Incident tab to log a new incident →</span></div></div>
+  </div>
+  <div id="section-threats" class="section">
+    <div class="page-header"><div><div class="page-title">INTELLIGENCE</div><div class="page-heading">GLOBAL <span>THREAT MAP</span></div></div></div>
+    <div class="panel" style="height:500px"><div class="panel-body" style="font-family:var(--font-mono);font-size:12px;color:var(--accent);text-align:center;padding:40px">FULL MAP VIEW — See dashboard for live origin data</div></div>
+  </div>
+  <div id="section-ai" class="section">
+    <div class="page-header"><div><div class="page-title">AI ENGINE</div><div class="page-heading">AI <span>ANALYSIS</span></div></div></div>
+    <div class="panel"><div class="panel-body" style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:40px;text-align:center">SENTINEL AI v3.1 // 2 ALERTS PENDING REVIEW<br><br><span style="color:var(--warn)">INC-2247: Confidence 94% — Advanced persistent threat profile matched</span><br><span style="color:var(--warn)">INC-2246: Confidence 81% — Spear-phishing pattern detected</span></div></div>
+  </div>
+  <div id="section-protocols" class="section">
+    <div class="page-header"><div><div class="page-title">SAFETY</div><div class="page-heading">RESPONSE <span>PROTOCOLS</span></div></div></div>
+    <div class="panel"><div class="panel-body" style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:40px;text-align:center">12 ACTIVE PROTOCOLS // LAST REVIEWED: 2025-11-01<br><br><span style="color:var(--accent2)">All protocols current. Next review due: 2026-05-01</span></div></div>
+  </div>
+  <div id="section-assets" class="section">
+    <div class="page-header"><div><div class="page-title">ASSETS</div><div class="page-heading">ASSET <span>REGISTRY</span></div></div></div>
+    <div class="panel"><div class="panel-body" style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:40px;text-align:center">348 MONITORED ASSETS // 341 NOMINAL // 7 ALERTS</div></div>
+  </div>
+  <div id="section-audit" class="section">
+    <div class="page-header"><div><div class="page-title">ADMIN</div><div class="page-heading">AUDIT <span>LOG</span></div></div></div>
+    <div class="panel"><div class="panel-body" style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:40px;text-align:center">IMMUTABLE LOG — 14,288 ENTRIES</div></div>
+  </div>
+  <div id="section-settings" class="section">
+    <div class="page-header"><div><div class="page-title">ADMIN</div><div class="page-heading">SYSTEM <span>SETTINGS</span></div></div></div>
+    <div class="panel"><div class="panel-body" style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:40px;text-align:center">PORTAL CONFIGURATION — CLEARANCE LEVEL 5 REQUIRED</div></div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<div class="footer-bar">
+  <div class="footer-text">SENTINEL v3.1.2 // MoD CYBER COMMAND // CLASSIFIED SYSTEM</div>
+  <div class="scroll-ticker">
+    <div class="ticker-content" id="ticker">
+      ● SYSTEM NOMINAL &nbsp;&nbsp;&nbsp; ● AI ENGINE: ACTIVE &nbsp;&nbsp;&nbsp; ● NODES MONITORED: 348 &nbsp;&nbsp;&nbsp; ● LAST THREAT BLOCKED: 14:31:44 UTC &nbsp;&nbsp;&nbsp; ● ENCRYPTION: AES-256 ACTIVE &nbsp;&nbsp;&nbsp; ● NEXT SCHEDULED MAINTENANCE: 02:00 UTC
+    </div>
+  </div>
+  <div class="footer-text" id="footer-time">UTC 00:00:00</div>
+</div>
+
+<script>
+// CLOCK
+function updateClock() {
+  const now = new Date();
+  const utc = now.toUTCString().split(' ')[4] + ' UTC';
+  document.getElementById('clock').textContent = utc;
+  document.getElementById('footer-time').textContent = 'UTC ' + now.toUTCString().split(' ')[4];
+  document.getElementById('sync-time').textContent = now.toUTCString().split(' ')[4] + ' UTC';
+  document.getElementById('alert-time').textContent = now.toUTCString().split(' ')[4] + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// SECTION SWITCHING
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  event.currentTarget && event.currentTarget.classList.add('active');
+}
+
+// SPARKLINES
+function buildSparkline(id, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '';
+  const vals = Array.from({length:12}, () => Math.random() * 100);
+  const max = Math.max(...vals);
+  vals.forEach(v => {
+    const b = document.createElement('div');
+    b.className = 'spark-bar';
+    b.style.height = (v/max*28+4) + 'px';
+    b.style.background = color;
+    b.style.opacity = '0.7';
+    el.appendChild(b);
+  });
+}
+buildSparkline('spark-1','#ff3b3b');
+buildSparkline('spark-2','#ffb800');
+buildSparkline('spark-3','#00ff9d');
+buildSparkline('spark-4','#00d4ff');
+
+// BAR CHART
+const attacks = [
+  { label: 'Phishing', val: 38, color: '#ff3b3b' },
+  { label: 'Brute Force', val: 27, color: '#ffb800' },
+  { label: 'Malware', val: 22, color: '#00d4ff' },
+  { label: 'SQL Inject', val: 15, color: '#00ff9d' },
+  { label: 'Lateral Mv.', val: 11, color: '#ff3b3b' },
+  { label: 'Data Exfil', val: 8, color: '#ffb800' },
+];
+const bc = document.getElementById('bar-chart');
+attacks.forEach(a => {
+  bc.innerHTML += `
+    <div class="bar-row">
+      <div class="bar-label">${a.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${a.color}" data-w="${a.val/38*100}"></div></div>
+      <div class="bar-val">${a.val}</div>
+    </div>`;
+});
+setTimeout(() => {
+  document.querySelectorAll('.bar-fill').forEach(b => b.style.width = b.dataset.w + '%');
+}, 300);
+
+// SYSTEM HEALTH
+const systems = [
+  { name: 'Firewall Cluster', val: 98, color: '#00ff9d' },
+  { name: 'IDS/IPS Engine', val: 94, color: '#00ff9d' },
+  { name: 'SIEM Platform', val: 87, color: '#ffb800' },
+  { name: 'AI Threat Engine', val: 100, color: '#00ff9d' },
+  { name: 'VPN Gateway', val: 72, color: '#ff3b3b' },
+];
+const hg = document.getElementById('health-grid');
+systems.forEach(s => {
+  hg.innerHTML += `
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">${s.name}</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:${s.color}">${s.val}%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${s.color}" data-w="${s.val}"></div></div>
+    </div>`;
+});
+setTimeout(() => {
+  document.querySelectorAll('.bar-fill').forEach(b => b.style.width = b.dataset.w + '%');
+}, 400);
+
+// AI FEED
+const feedItems = [
+  { icon: '◉', type: 'ai', msg: 'Anomaly detected on NODE-BRAVO-7. Behavioral pattern matches APT-29 profile. Confidence: 94%. Auto-quarantine recommended.', time: '14:32:07', ago: '2m ago' },
+  { icon: '⚠', type: 'alert', msg: 'Brute force attack on VPN-GW-01 — 847 failed login attempts from IP range 103.21.x.x. Geo: Eastern Europe.', time: '14:28:44', ago: '5m ago' },
+  { icon: '◉', type: 'ai', msg: 'Phishing campaign identified — 14 emails blocked matching signature SIG-PHX-2024-118. No user interaction confirmed.', time: '14:15:20', ago: '18m ago' },
+  { icon: '✓', type: 'ok', msg: 'INC-2243 resolved. Port scan from 45.33.x.x blocked at perimeter. Threat actor profile updated.', time: '13:58:11', ago: '35m ago' },
+  { icon: '◉', type: 'ai', msg: 'Scheduled AI threat intelligence sync complete. 342 new IOCs loaded from MoD Threat Exchange.', time: '13:00:00', ago: '1h ago' },
+];
+const feed = document.getElementById('ai-feed');
+feedItems.forEach(f => {
+  feed.innerHTML += `
+    <div class="feed-item">
+      <div class="feed-icon ${f.type}">${f.icon}</div>
+      <div class="feed-content">
+        <div class="feed-msg">${f.msg}</div>
+        <div class="feed-meta">${f.time} UTC — ${f.ago}</div>
+      </div>
+    </div>`;
+});
+
+// WORLD MAP CANVAS
+const canvas = document.getElementById('map-canvas');
+const ctx = canvas.getContext('2d');
+function resizeCanvas() {
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  drawMap();
+}
+
+const threatOrigins = [
+  { x: 0.52, y: 0.35, color: '#ff3b3b', size: 3 },  // Russia
+  { x: 0.75, y: 0.40, color: '#ff3b3b', size: 4 },  // China
+  { x: 0.47, y: 0.28, color: '#ffb800', size: 2 },  // Eastern Europe
+  { x: 0.20, y: 0.38, color: '#ffb800', size: 2 },  // N. America
+  { x: 0.42, y: 0.55, color: '#00d4ff', size: 2 },  // Middle East
+  { x: 0.78, y: 0.60, color: '#ffb800', size: 2 },  // SEA
+];
+const target = { x: 0.48, y: 0.30 };  // UK roughly
+
+let animFrame = 0;
+function drawMap() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = 'rgba(0,20,40,0.8)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,212,255,0.06)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 30) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 30) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Animated attack lines
+  animFrame = (animFrame + 1) % 120;
+  threatOrigins.forEach((o, i) => {
+    const ox = o.x * W, oy = o.y * H;
+    const tx = target.x * W, ty = target.y * H;
+    const progress = ((animFrame + i * 20) % 120) / 120;
+
+    // Line
+    ctx.beginPath();
+    ctx.strokeStyle = o.color + '33';
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Moving dot along line
+    const px = ox + (tx - ox) * progress;
+    const py = oy + (ty - oy) * progress;
+    ctx.beginPath();
+    ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = o.color;
+    ctx.fill();
+
+    // Origin node
+    ctx.beginPath();
+    ctx.arc(ox, oy, o.size, 0, Math.PI * 2);
+    ctx.fillStyle = o.color;
+    ctx.fill();
+
+    // Pulse ring
+    const pulse = (animFrame % 60) / 60;
+    ctx.beginPath();
+    ctx.arc(ox, oy, o.size + pulse * 10, 0, Math.PI * 2);
+    ctx.strokeStyle = o.color + Math.floor((1 - pulse) * 88).toString(16).padStart(2,'0');
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Target (UK)
+  ctx.beginPath();
+  ctx.arc(target.x * W, target.y * H, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#00d4ff';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(target.x * W, target.y * H, 12, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,212,255,0.5)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(0,212,255,0.8)';
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillText('TARGET', target.x * W + 14, target.y * H + 3);
+}
+
+window.addEventListener('resize', resizeCanvas);
+setTimeout(() => {
+  resizeCanvas();
+  setInterval(() => { animFrame++; drawMap(); }, 40);
+}, 100);
+
+// LIVE STATS FLICKER
+function fluctuate() {
+  const base = [4, 127, 119, 348];
+  const ids = ['stat-active','stat-threats','stat-neutral','stat-systems'];
+  const delta = [0, 1, 1, 0];
+  ids.forEach((id, i) => {
+    if (delta[i] && Math.random() > 0.7) {
+      const el = document.getElementById(id);
+      const cur = parseInt(el.textContent);
+      el.textContent = cur + (Math.random() > 0.5 ? 1 : 0);
+    }
+  });
+}
+setInterval(fluctuate, 5000);
+
+// REPORT SUBMIT + AI ANALYSIS
+const analyses = {
+  'Malware / Ransomware': 'Malware signature detected. Cross-referencing MoD threat database — matches COZY-BEAR-2024 profile. Recommend immediate isolation of affected system, forensic imaging, and escalation to NCSC. Estimated impact: MODERATE. Automated containment protocols initiated.',
+  'Phishing / Social Engineering': 'Phishing vector identified. Email header analysis suggests domain spoofing (lookalike domain pattern). Confidence: 88%. Recommend blocking sender domain, user awareness alert to unit, and credential reset for potential targets. AI scanning adjacent inboxes now.',
+  'Unauthorized Access': 'Unauthorized access event logged. Account behaviour deviates from baseline by 3.4 sigma. Geo-IP mismatch detected — access origin does not match registered user location. Recommend account suspension, session revocation, and investigation for insider threat or credential compromise.',
+  'Data Exfiltration': 'CRITICAL: Potential data exfiltration in progress. Anomalous outbound data volume detected (4.2GB above baseline). Destination IP flagged in threat intelligence feeds. Automated firewall rule applied. Incident escalated to Priority 1. Notify Data Protection Officer immediately.',
+  'DDoS / Service Disruption': 'DDoS pattern confirmed — volumetric attack, ~2.3Gbps. Scrubbing centre traffic diversion recommended. Estimated attack duration: 2–4 hours based on similar campaigns. Upstream provider notification advised. Service continuity protocols engaged.',
+  'default': 'Incident logged and triaged by SENTINEL AI. Threat classification in progress. Preliminary assessment: MEDIUM risk. Manual review by Cyber Duty Officer recommended within 4 hours. All evidence preserved in secure chain of custody.'
+};
+
+function submitReport() {
+  const type = document.getElementById('r-type').value;
+  const text = analyses[type] || analyses['default'];
+  const box = document.getElementById('ai-result');
+  const el = document.getElementById('ai-result-text');
+  box.classList.add('visible');
+  el.textContent = '';
+  el.classList.add('typing');
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent += text[i];
+    i++;
+    if (i >= text.length) {
+      clearInterval(interval);
+      el.classList.remove('typing');
+    }
+  }, 18);
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>
