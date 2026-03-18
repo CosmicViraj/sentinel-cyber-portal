@@ -135,7 +135,7 @@
       }
 
       try {
-        const res = await fetch('http://localhost:5000/api/incidents', {
+        const res = await fetch('/api/incidents', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
           body: JSON.stringify({ type, severity, affected_asset: asset, description })
@@ -155,7 +155,7 @@
     }
 
     async function pollAI(id) {
-      const res = await fetch('http://localhost:5000/api/incidents/' + id, {
+      const res = await fetch('/api/incidents/' + id, {
         headers: { 'Authorization': 'Bearer ' + token }
       });
       const data = await res.json();

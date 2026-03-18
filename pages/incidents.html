@@ -39,7 +39,7 @@
     if (!token) window.location.href = 'login.html';
 
     async function loadIncidents() {
-      const res = await fetch('http://localhost:5000/api/incidents', {
+      const res = await fetch('/api/incidents', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
       const data = await res.json();

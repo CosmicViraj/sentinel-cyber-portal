@@ -39,7 +39,7 @@
     if (!token) window.location.href = 'login.html';
 
     async function loadAssets() {
-      const res = await fetch('http://localhost:5000/api/assets', {
+      const res = await fetch('/api/assets', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
       const data = await res.json();

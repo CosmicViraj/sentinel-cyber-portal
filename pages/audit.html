@@ -34,7 +34,7 @@
 
     async function loadAudit() {
       try {
-        const res = await fetch('http://localhost:5000/api/audit', {
+        const res = await fetch('/api/audit', {
           headers: { 'Authorization': 'Bearer ' + token }
         });
         const data = await res.json();
