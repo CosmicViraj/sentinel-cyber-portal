@@ -9,7 +9,7 @@ const path = require('path');
 const app = express();
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -31,4 +31,6 @@ app.use('/api/assets', require('./routes/asset.routes'));
 app.get('/api/health', (req, res) => res.json({ status: 'online', time: new Date() }));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 SENTINEL running on http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 SENTINEL running on http://localhost:${PORT}`);
+});
