@@ -2,7 +2,7 @@
 
 > AI-powered cyber incident reporting and threat intelligence portal for the Ministry of Defence — featuring real-time threat monitoring, AI-driven incident triage, animated global attack visualization, and secure incident reporting with automated threat assessment.
 
-![SENTINEL Dashboard](https://sentinel-sp7p.onrender.com/index.html)
+![SENTINEL Dashboard]([https://sentinel-sp7p.onrender.com/index.html](https://sentinel-sp7p.onrender.com/pages/signup.html))
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-sentinel--sp7p.onrender.com-00d4ff?style=flat-square)](https://sentinel-sp7p.onrender.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
