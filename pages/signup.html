@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — Request Access</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #030a0f;
+      color: #c8dde8;
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+    .box {
+      background: #071420;
+      border: 1px solid rgba(0,212,255,0.2);
+      padding: 40px;
+      width: 440px;
+      position: relative;
+      z-index: 1;
+    }
+    .logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 36px;
+      font-weight: 900;
+      color: #00d4ff;
+      letter-spacing: 6px;
+      text-align: center;
+      margin-bottom: 4px;
+      text-shadow: 0 0 20px rgba(0,212,255,0.5);
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #4a6a7a;
+      margin-bottom: 8px;
+    }
+    .page-title {
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: #00d4ff;
+      margin-bottom: 28px;
+      border-bottom: 1px solid rgba(0,212,255,0.1);
+      padding-bottom: 16px;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 10px; letter-spacing: 2px; color: #4a6a7a; display: block; margin-bottom: 6px; }
+    .form-input {
+      width: 100%;
+      background: rgba(0,212,255,0.04);
+      border: 1px solid rgba(0,212,255,0.15);
+      color: #c8dde8;
+      padding: 10px 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      outline: none;
+    }
+    .form-input:focus { border-color: #00d4ff; background: rgba(0,212,255,0.08); }
+    select.form-input { cursor: pointer; }
+    select.form-input option { background: #071420; }
+    .btn {
+      width: 100%;
+      background: #00d4ff;
+      color: #000;
+      border: none;
+      padding: 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #fff; box-shadow: 0 0 20px rgba(0,212,255,0.5); }
+    .btn:disabled { background: #1a3a4a; color: #4a6a7a; cursor: not-allowed; box-shadow: none; }
+    .msg {
+      padding: 10px;
+      font-size: 12px;
+      margin-top: 12px;
+      display: none;
+    }
+    .msg.error { background: rgba(255,59,59,0.1); border: 1px solid rgba(255,59,59,0.3); color: #ff3b3b; }
+    .msg.success { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); color: #00d4ff; }
+    .classification {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #ff3b3b;
+      margin-top: 20px;
+      border-top: 1px solid rgba(0,212,255,0.1);
+      padding-top: 16px;
+    }
+    .login-link {
+      text-align: center;
+      font-size: 11px;
+      color: #4a6a7a;
+      margin-top: 14px;
+    }
+    .login-link a { color: #00d4ff; text-decoration: none; }
+    .login-link a:hover { text-decoration: underline; }
+    .password-strength {
+      height: 2px;
+      background: rgba(0,212,255,0.1);
+      margin-top: 6px;
+      position: relative;
+    }
+    .strength-bar {
+      height: 100%;
+      width: 0%;
+      transition: all 0.3s;
+    }
+    .strength-text { font-size: 9px; letter-spacing: 1px; margin-top: 4px; color: #4a6a7a; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">SENTINEL</div>
+    <div class="subtitle">MINISTRY OF DEFENCE // CYBER COMMAND</div>
+    <div class="page-title">REQUEST SYSTEM ACCESS</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">FULL NAME</label>
+        <input class="form-input" type="text" id="full_name" placeholder="Sgt. J. Smith">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SERVICE NUMBER</label>
+        <input class="form-input" type="text" id="service_number" placeholder="SN-00000">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">USERNAME</label>
+      <input class="form-input" type="text" id="username" placeholder="firstname.lastname">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">EMAIL</label>
+      <input class="form-input" type="email" id="email" placeholder="user@mod.gov.uk">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">ROLE</label>
+        <select class="form-input" id="role">
+          <option value="viewer">VIEWER</option>
+          <option value="operator">OPERATOR</option>
+          <option value="analyst">ANALYST</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">UNIT</label>
+        <input class="form-input" type="text" id="unit" placeholder="CYBER WING">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">PASSWORD</label>
+      <input class="form-input" type="password" id="password" placeholder="Min. 8 chars, upper, number" oninput="checkStrength()">
+      <div class="password-strength"><div class="strength-bar" id="strength-bar"></div></div>
+      <div class="strength-text" id="strength-text"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">CONFIRM PASSWORD</label>
+      <input class="form-input" type="password" id="confirm_password" placeholder="Re-enter password">
+    </div>
+
+    <button class="btn" onclick="register()" id="reg-btn">REQUEST ACCESS</button>
+    <div class="msg" id="msg"></div>
+
+    <div class="login-link">Already have access? <a href="login.html">AUTHENTICATE →</a></div>
+    <div class="classification">⚠ RESTRICTED ACCESS — AUTHORISED PERSONNEL ONLY</div>
+  </div>
+
+  <script>
+    function checkStrength() {
+      const pw = document.getElementById('password').value;
+      const bar = document.getElementById('strength-bar');
+      const text = document.getElementById('strength-text');
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (/[A-Z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+      const colors = ['#ff3b3b', '#ff8c00', '#ffd700', '#00d4ff'];
+      const labels = ['WEAK', 'FAIR', 'GOOD', 'STRONG'];
+      bar.style.width = (score * 25) + '%';
+      bar.style.background = colors[score - 1] || '#ff3b3b';
+      text.textContent = pw.length ? 'STRENGTH: ' + (labels[score - 1] || 'WEAK') : '';
+      text.style.color = colors[score - 1] || '#4a6a7a';
+    }
+
+    async function register() {
+      const full_name = document.getElementById('full_name').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm_password').value;
+      const role = document.getElementById('role').value;
+      const unit = document.getElementById('unit').value.trim();
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('reg-btn');
+
+      msg.style.display = 'none';
+
+      if (!full_name || !username || !email || !password) {
+        msg.className = 'msg error'; msg.style.display = 'block';
+        msg.textContent = '⚠ All fields are required'; return;
+      }
+      if (password !== confirm) {
+        msg.className = 'msg error'; msg.style.display = 'block';
+        msg.textContent = '⚠ Passwords do not match'; return;
+      }
+      if (password.length < 8) {
+        msg.className = 'msg error'; msg.style.display = 'block';
+        msg.textContent = '⚠ Password must be at least 8 characters'; return;
+      }
+
+      btn.disabled = true; btn.textContent = 'PROCESSING...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name, username, email, password, role, unit })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+        msg.className = 'msg success'; msg.style.display = 'block';
+        msg.textContent = '✓ ACCESS REQUEST SUBMITTED — Redirecting to login...';
+        setTimeout(() => window.location.href = 'login.html', 2000);
+      } catch (err) {
+        msg.className = 'msg error'; msg.style.display = 'block';
+        msg.textContent = '⚠ ' + err.message;
+        btn.disabled = false; btn.textContent = 'REQUEST ACCESS';
+      }
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
+  </script>
+</body>
+</html>

@@ -22,3 +22,20 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+// Register new user
+router.post('/register', async (req, res) => {
+  const { full_name, username, email, password, role } = req.body;
+  const hash = await bcrypt.hash(password, 12);
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO users (username, password_hash, full_name, role, clearance_level)
+       VALUES ($1,$2,$3,$4,1) RETURNING id, username, full_name, role`,
+      [username, hash, full_name, role || 'viewer']
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Username already exists' });
+    res.status(500).json({ error: err.message });
+  }
+});
