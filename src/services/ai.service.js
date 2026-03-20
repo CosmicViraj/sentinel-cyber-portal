@@ -1,10 +1,13 @@
 require('dotenv').config();
 const Groq = require('groq-sdk');
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const MODEL = 'llama-3.3-70b-versatile';
 
+function getGroq() {
+  return new Groq({ apiKey: process.env.GROQ_API_KEY });
+}
+
 exports.chatWithAI = async (messages) => {
-  const res = await groq.chat.completions.create({
+  const res = await getGroq().chat.completions.create({
     model: MODEL,
     messages: [
       { role: 'system', content: 'You are SENTINEL AI — a classified military cyber threat intelligence assistant for the Ministry of Defence. Be concise, tactical, and professional.' },
@@ -16,7 +19,7 @@ exports.chatWithAI = async (messages) => {
 };
 
 exports.analyzeIncident = async (incident) => {
-  const res = await groq.chat.completions.create({
+  const res = await getGroq().chat.completions.create({
     model: MODEL,
     messages: [{
       role: 'user',
@@ -25,7 +28,6 @@ Type: ${incident.type}
 Severity: ${incident.severity}
 Asset: ${incident.affected_asset}
 Description: ${incident.description}
-
 Respond with: SEVERITY SCORE (1-10), THREAT ACTOR PROFILE, ATTACK VECTOR, IMMEDIATE ACTIONS, RISK ASSESSMENT.`
     }],
     max_tokens: 1024
@@ -34,7 +36,7 @@ Respond with: SEVERITY SCORE (1-10), THREAT ACTOR PROFILE, ATTACK VECTOR, IMMEDI
 };
 
 exports.scanPhishing = async (url) => {
-  const res = await groq.chat.completions.create({
+  const res = await getGroq().chat.completions.create({
     model: MODEL,
     messages: [{
       role: 'user',
@@ -47,7 +49,7 @@ Respond with: VERDICT (Safe/Suspicious/Dangerous), CONFIDENCE %, RED FLAGS (bull
 };
 
 exports.scanVulnerability = async (target) => {
-  const res = await groq.chat.completions.create({
+  const res = await getGroq().chat.completions.create({
     model: MODEL,
     messages: [{
       role: 'user',
@@ -60,7 +62,7 @@ Provide: RISK LEVEL, POTENTIAL VULNERABILITIES (CVEs if known), ATTACK SURFACE, 
 };
 
 exports.generateBriefing = async (incidents) => {
-  const res = await groq.chat.completions.create({
+  const res = await getGroq().chat.completions.create({
     model: MODEL,
     messages: [{
       role: 'user',
