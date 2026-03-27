@@ -1,0 +1,541 @@
+<!--
+  SENTINEL — File Analysis UI Component
+  Drop this into your existing index.html or frontend framework.
+  Designed to match the existing SENTINEL dark UI aesthetic.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SENTINEL — File Analysis</title>
+  <style>
+    /* ── Design tokens matching SENTINEL dark theme ── */
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-card: #111827;
+      --bg-input: #1a2235;
+      --border: #1e3a5f;
+      --accent: #00d4ff;
+      --accent-dim: rgba(0, 212, 255, 0.1);
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --orange: #f97316;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --radius: 8px;
+      --font: 'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font); }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 800px;
+      margin: 32px auto;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%;
+    }
+    .drop-zone .icon { font-size: 36px; margin-bottom: 12px; }
+    .drop-zone .label { color: var(--text-secondary); font-size: 13px; }
+    .drop-zone .label strong { color: var(--accent); }
+    .drop-zone .hint { color: var(--text-secondary); font-size: 11px; margin-top: 8px; opacity: 0.7; }
+
+    /* ── Selected file ── */
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-top: 12px;
+    }
+    .file-selected.visible { display: flex; }
+    .file-selected .fname { flex: 1; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-selected .fsize { font-size: 11px; color: var(--text-secondary); }
+    .file-selected .remove { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 16px; }
+
+    /* ── Incident ID field ── */
+    .field { margin-top: 16px; }
+    .field label { display: block; font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .field input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .field input::placeholder { color: var(--text-secondary); opacity: 0.5; }
+
+    /* ── Submit button ── */
+    .btn-analyse {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-analyse:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-analyse:not(:disabled):hover { opacity: 0.85; }
+
+    /* ── Progress ── */
+    .progress-bar {
+      display: none;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+    .progress-bar.visible { display: block; }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: progress-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes progress-pulse { 0%,100% { width: 20%; margin-left: 0; } 50% { width: 60%; margin-left: 30%; } }
+
+    .status-line { font-size: 11px; color: var(--text-secondary); text-align: center; margin-top: 8px; }
+
+    /* ── Result card ── */
+    .result-card {
+      display: none;
+      margin-top: 24px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .result-card.visible { display: block; }
+
+    .result-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .result-header.SAFE        { background: rgba(16, 185, 129, 0.15); border-bottom: 1px solid rgba(16,185,129,0.3); }
+    .result-header.SUSPICIOUS  { background: rgba(245, 158, 11, 0.15); border-bottom: 1px solid rgba(245,158,11,0.3); }
+    .result-header.VULNERABLE  { background: rgba(239, 68, 68, 0.15);  border-bottom: 1px solid rgba(239,68,68,0.3); }
+    .result-header.HONEYTRAP   { background: rgba(139, 92, 246, 0.15); border-bottom: 1px solid rgba(139,92,246,0.3); }
+
+    .verdict-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    .verdict-badge.SAFE       { color: var(--green); }
+    .verdict-badge.SUSPICIOUS { color: var(--yellow); }
+    .verdict-badge.VULNERABLE { color: var(--red); }
+    .verdict-badge.HONEYTRAP  { color: var(--purple); }
+
+    .risk-score {
+      font-size: 28px;
+      font-weight: bold;
+      line-height: 1;
+    }
+    .risk-score.low    { color: var(--green); }
+    .risk-score.medium { color: var(--yellow); }
+    .risk-score.high   { color: var(--orange); }
+    .risk-score.critical { color: var(--red); }
+
+    .result-body { background: var(--bg-input); padding: 20px; }
+
+    .result-section { margin-bottom: 16px; }
+    .result-section:last-child { margin-bottom: 0; }
+    .section-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+    .section-text { font-size: 13px; line-height: 1.6; color: var(--text-primary); }
+
+    .findings-list { list-style: none; }
+    .findings-list li {
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 4px 0;
+      padding-left: 16px;
+      position: relative;
+    }
+    .findings-list li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); }
+
+    .flag-chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      margin: 2px 4px 2px 0;
+      font-weight: bold;
+    }
+    .flag-chip.CRITICAL { background: rgba(239,68,68,0.2);  color: var(--red); }
+    .flag-chip.HIGH     { background: rgba(249,115,22,0.2); color: var(--orange); }
+    .flag-chip.MEDIUM   { background: rgba(245,158,11,0.2); color: var(--yellow); }
+    .flag-chip.LOW      { background: rgba(16,185,129,0.2); color: var(--green); }
+
+    .recommended-action {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      border-left: 3px solid;
+    }
+    .recommended-action.QUARANTINE { background: rgba(239,68,68,0.1);  border-color: var(--red); }
+    .recommended-action.BLOCK      { background: rgba(239,68,68,0.15); border-color: #ff0000; }
+    .recommended-action.MONITOR    { background: rgba(245,158,11,0.1); border-color: var(--yellow); }
+    .recommended-action.RELEASE    { background: rgba(16,185,129,0.1); border-color: var(--green); }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .meta-item label { font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+    .meta-item span { font-size: 12px; color: var(--text-primary); word-break: break-all; }
+
+    .error-box {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--red);
+    }
+    .error-box.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="panel-title">
+    <span>⬡</span> FILE THREAT ANALYSIS
+  </div>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".pdf,.txt,.log,.json,.xml,.csv,.doc,.docx,.xls,.xlsx,.pcap,.eml,.msg,.zip,.ps1,.sh,.bat,.exe,.dll">
+    <div class="icon">📁</div>
+    <div class="label"><strong>Drop file here</strong> or click to browse</div>
+    <div class="hint">PDF · DOC · EXE · PCAP · ZIP · PS1 · LOG · EML — max 10 MB</div>
+  </div>
+
+  <!-- Selected file display -->
+  <div class="file-selected" id="fileSelected">
+    <span style="font-size:20px">📄</span>
+    <span class="fname" id="selectedName"></span>
+    <span class="fsize" id="selectedSize"></span>
+    <button class="remove" id="removeFile" title="Remove">✕</button>
+  </div>
+
+  <!-- Optional incident ID -->
+  <div class="field">
+    <label for="incidentId">Link to Incident ID (optional)</label>
+    <input type="text" id="incidentId" placeholder="e.g. INC-2024-00421 UUID" autocomplete="off">
+  </div>
+
+  <!-- Submit -->
+  <button class="btn-analyse" id="btnAnalyse" disabled>
+    ▶ ANALYSE FILE
+  </button>
+
+  <!-- Progress -->
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill"></div>
+  </div>
+  <div class="status-line" id="statusLine"></div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header" id="resultHeader">
+      <div class="verdict-badge" id="verdictBadge"></div>
+      <div>
+        <div style="font-size:10px;color:var(--text-secondary);letter-spacing:1px;text-align:right;margin-bottom:4px">RISK SCORE</div>
+        <div class="risk-score" id="riskScore"></div>
+      </div>
+    </div>
+
+    <div class="result-body">
+      <div class="result-section">
+        <div class="section-label">AI Assessment</div>
+        <div class="section-text" id="aiSummary"></div>
+      </div>
+
+      <div class="result-section" id="vulnSection" style="display:none">
+        <div class="section-label">Vulnerability Details</div>
+        <ul class="findings-list" id="vulnList"></ul>
+      </div>
+
+      <div class="result-section" id="honeySection" style="display:none">
+        <div class="section-label">Honeytrap Indicators</div>
+        <ul class="findings-list" id="honeyList"></ul>
+      </div>
+
+      <div class="result-section" id="targetSection" style="display:none">
+        <div class="section-label">Likely Target Profile</div>
+        <div class="section-text" id="targetProfile" style="color:var(--purple)"></div>
+      </div>
+
+      <div class="result-section" id="staticFlagsSection" style="display:none">
+        <div class="section-label">Static Analysis Flags</div>
+        <div id="staticFlagsContainer"></div>
+      </div>
+
+      <div class="result-section">
+        <div class="section-label">Recommended Action</div>
+        <div class="recommended-action" id="recommendedAction"></div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-item">
+          <label>SHA-256</label>
+          <span id="metaSha" style="font-size:10px"></span>
+        </div>
+        <div class="meta-item">
+          <label>File Size</label>
+          <span id="metaSize"></span>
+        </div>
+        <div class="meta-item">
+          <label>Confidence</label>
+          <span id="metaConf"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = '/api'; // Adjust if running on different origin
+
+  // ── State ──────────────────────────────────────────────
+  let selectedFile = null;
+  const $ = id => document.getElementById(id);
+
+  // ── Drop zone events ────────────────────────────────────
+  const dropZone = $('dropZone');
+  const fileInput = $('fileInput');
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  $('removeFile').addEventListener('click', clearFile);
+
+  function setFile(file) {
+    selectedFile = file;
+    $('selectedName').textContent = file.name;
+    $('selectedSize').textContent = formatBytes(file.size);
+    $('fileSelected').classList.add('visible');
+    $('btnAnalyse').disabled = false;
+    hideResult();
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    $('fileSelected').classList.remove('visible');
+    $('btnAnalyse').disabled = true;
+    hideResult();
+  }
+
+  function hideResult() {
+    $('resultCard').classList.remove('visible');
+    $('errorBox').classList.remove('visible');
+  }
+
+  // ── Analyse ─────────────────────────────────────────────
+  $('btnAnalyse').addEventListener('click', runAnalysis);
+
+  async function runAnalysis() {
+    if (!selectedFile) return;
+
+    setLoading(true, 'Uploading file...');
+    hideResult();
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    const incidentId = $('incidentId').value.trim();
+    if (incidentId) formData.append('incidentId', incidentId);
+
+    try {
+      // Simulate progress messages
+      const phases = [
+        [500,  'Running static analysis...'],
+        [2000, 'Querying VirusTotal...'],
+        [3500, 'Running Claude AI deep scan...'],
+        [6000, 'Assessing honeytrap indicators...'],
+      ];
+      phases.forEach(([ms, msg]) => setTimeout(() => setStatus(msg), ms));
+
+      const token = localStorage.getItem('sentinel_token') || '';
+      const res = await fetch(`${API_BASE}/files/analyse`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || `HTTP ${res.status}`);
+      }
+
+      setLoading(false);
+      renderResult(data.analysis);
+
+    } catch (err) {
+      setLoading(false);
+      $('errorBox').textContent = `⚠ Analysis failed: ${err.message}`;
+      $('errorBox').classList.add('visible');
+    }
+  }
+
+  // ── Render result ────────────────────────────────────────
+  function renderResult(a) {
+    const card = $('resultCard');
+    const header = $('resultHeader');
+
+    // Header
+    header.className = `result-header ${a.verdict}`;
+
+    const verdictIcons = { SAFE: '✓', SUSPICIOUS: '?', VULNERABLE: '!', HONEYTRAP: '⊗' };
+    $('verdictBadge').className = `verdict-badge ${a.verdict}`;
+    $('verdictBadge').textContent = `${verdictIcons[a.verdict] || '?'} ${a.verdict}`;
+
+    const scoreEl = $('riskScore');
+    scoreEl.textContent = `${a.riskScore}/100`;
+    scoreEl.className = `risk-score ${a.riskScore < 25 ? 'low' : a.riskScore < 50 ? 'medium' : a.riskScore < 75 ? 'high' : 'critical'}`;
+
+    // AI summary
+    $('aiSummary').textContent = a.summary || 'No summary available.';
+
+    // Vulnerability details
+    if (a.vulnerabilityDetails?.length) {
+      $('vulnSection').style.display = '';
+      $('vulnList').innerHTML = a.vulnerabilityDetails.map(d => `<li>${esc(d)}</li>`).join('');
+    } else $('vulnSection').style.display = 'none';
+
+    // Honeytrap indicators
+    if (a.honeyTrapIndicators?.length) {
+      $('honeySection').style.display = '';
+      $('honeyList').innerHTML = a.honeyTrapIndicators.map(h => `<li>${esc(h)}</li>`).join('');
+    } else $('honeySection').style.display = 'none';
+
+    // Target profile
+    if (a.targetProfile) {
+      $('targetSection').style.display = '';
+      $('targetProfile').textContent = a.targetProfile;
+    } else $('targetSection').style.display = 'none';
+
+    // Static flags
+    if (a.staticFlags?.length) {
+      $('staticFlagsSection').style.display = '';
+      $('staticFlagsContainer').innerHTML = a.staticFlags.map(f =>
+        `<span class="flag-chip ${f.severity}" title="${esc(f.detail || '')}">${esc(f.type)}</span>`
+      ).join('');
+    } else $('staticFlagsSection').style.display = 'none';
+
+    // Recommended action
+    const actionEl = $('recommendedAction');
+    const actionKey = (a.recommendedAction || '').split(' ')[0].toUpperCase();
+    actionEl.className = `recommended-action ${actionKey}`;
+    actionEl.textContent = a.recommendedAction || 'No recommendation provided.';
+
+    // Meta
+    $('metaSha').textContent = (a.sha256 || '—').slice(0, 16) + '...';
+    $('metaSize').textContent = formatBytes(a.fileSize);
+    $('metaConf').textContent = a.confidence || '—';
+
+    card.classList.add('visible');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────
+  function setLoading(loading, msg = '') {
+    $('btnAnalyse').disabled = loading;
+    $('progressBar').classList.toggle('visible', loading);
+    setStatus(loading ? msg : '');
+  }
+
+  function setStatus(msg) { $('statusLine').textContent = msg; }
+
+  function formatBytes(bytes) {
+    if (!bytes) return '—';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+    return `${bytes.toFixed(1)} ${units[i]}`;
+  }
+
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
