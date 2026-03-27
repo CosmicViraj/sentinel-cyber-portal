@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-
+const aiRoutes = require('./routes/ai');
 const app = express();
 
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -16,7 +16,7 @@ app.use(morgan('dev'));
 // Rate limiting
 app.use('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 20 }));
 app.use('/api/', rateLimit({ windowMs: 1 * 60 * 1000, max: 200 }));
-
+app.use('/api/ai', aiRoutes);
 // Serve frontend pages
 app.use(express.static(path.join(__dirname, '../')));
 app.use('/pages', express.static(path.join(__dirname, '../pages')));
