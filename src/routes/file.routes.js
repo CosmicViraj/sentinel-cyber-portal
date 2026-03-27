@@ -10,9 +10,9 @@
 
 const express = require('express');
 const router  = express.Router();
+const { verifyToken, requireRole } = require('../middleware/auth.middleware');
+const { upload, handleUploadError } = require('../middleware/upload.middleware');
 
-const { upload, handleUploadError }    = require('../middleware/upload.middleware');
-const { verifyToken, requireClearance } = require('../middleware/auth.middleware');
 const {
   uploadAndAnalyse,
   listAnalyses,
@@ -27,22 +27,22 @@ router.use(verifyToken);
 // Upload & analyse — clearance 2+ (operator and above)
 router.post(
   '/analyse',
-  requireClearance(2),
+  requireRole('operator', 'analyst', 'admin', 'commander'),
   upload.single('file'),
   handleUploadError,
   uploadAndAnalyse
 );
 
-// List analyses — any authenticated user
+// List
 router.get('/', listAnalyses);
 
-// Stats summary — analyst+ (clearance 3)
-router.get('/stats', requireClearance(3), getStats);
+// Stats
+router.get('/stats', requireRole('analyst', 'admin', 'commander'), getStats);
 
-// Single analysis — any authenticated user
+// Get single
 router.get('/:id', getAnalysis);
 
-// Delete — admin only (clearance 5)
-router.delete('/:id', requireClearance(5), deleteAnalysis);
+// Delete
+router.delete('/:id', requireRole('admin'), deleteAnalysis);
 
 module.exports = router;
