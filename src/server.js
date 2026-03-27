@@ -27,7 +27,7 @@ app.use('/api/incidents', require('./routes/incident.routes'));
 app.use('/api/dashboard', require('./routes/dashboard.routes'));
 app.use('/api/ai', require('./routes/ai.routes'));
 app.use('/api/assets', require('./routes/asset.routes'));
-
+app.use('/api/files', require('./routes/file.routes'));
 app.get('/api/health', (req, res) => res.json({ status: 'online', time: new Date() }));
 
 const PORT = process.env.PORT || 5000;
