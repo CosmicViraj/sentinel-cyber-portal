@@ -13,11 +13,11 @@ const fs   = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const axios  = require('axios');
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const logger = require('../utils/logger');
 require('dotenv').config();
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ─────────────────────────────────────────────
 // LAYER 1 — Static Analysis
@@ -191,120 +191,112 @@ async function virusTotalCheck(filePath, sha256) {
 }
 
 // ─────────────────────────────────────────────
-// LAYER 3 — Claude AI Analysis
+// LAYER 3 — Gemini AI Analysis (UPDATED)
 // ─────────────────────────────────────────────
 
 async function aiAnalysis(filePath, originalName, staticFlags, vtResult) {
-  // Read file content — try UTF-8 first, fallback to binary summary
   let fileContent = '';
   let contentNote = '';
+
   try {
     const raw = fs.readFileSync(filePath);
-    // Attempt UTF-8 decode of first 6000 chars
     fileContent = raw.toString('utf8', 0, Math.min(raw.length, 6000));
-    if (raw.length > 6000) contentNote = `[Truncated — full file is ${raw.length} bytes]`;
+    if (raw.length > 6000) {
+      contentNote = `[Truncated — full file is ${raw.length} bytes]`;
+    }
   } catch {
     fileContent = '[Binary file — cannot display as text]';
     contentNote = 'Binary content only';
   }
 
   const vtSummary = vtResult?.skipped
-    ? 'VirusTotal check was skipped (no API key)'
+    ? 'VirusTotal skipped'
     : vtResult?.known
-    ? `VT result: ${vtResult.malicious} malicious, ${vtResult.suspicious} suspicious detections out of ${(vtResult.malicious || 0) + (vtResult.suspicious || 0) + (vtResult.harmless || 0) + (vtResult.undetected || 0)} engines`
-    : 'File not found in VirusTotal database (new/unknown file)';
+    ? `VT: ${vtResult.malicious} malicious, ${vtResult.suspicious} suspicious`
+    : 'Unknown file (not in VT)';
 
   const staticSummary = staticFlags.length
-    ? staticFlags.map(f => `  • [${f.severity}] ${f.type}: ${f.detail || ''}`).join('\n')
-    : '  • No static flags detected';
+    ? staticFlags.map(f => `• [${f.severity}] ${f.type}: ${f.detail || ''}`).join('\n')
+    : '• No static flags';
 
-  const systemPrompt = `You are a senior cybersecurity analyst embedded within the UK Ministry of Defence SENTINEL Cyber Incident Portal. You have 15+ years of experience in malware analysis, phishing detection, and advanced persistent threat (APT) investigation.
+  const prompt = `
+You are a senior cybersecurity analyst.
 
-Your task is to analyse submitted files for two specific threats:
+Analyze this file for:
+1. Malware / vulnerabilities
+2. Honeytrap / phishing intent
 
-1. VULNERABILITY / MALWARE: Does the file contain malicious code, exploit payloads, credential theft mechanisms, C2 callbacks, process injection, obfuscated shellcode, or any other active threat?
+Respond ONLY in valid JSON.
 
-2. HONEYTRAP: Is this file crafted to deceive a recipient into taking a harmful action? This includes:
-   - Phishing lures impersonating MoD, HMRC, NCSC, NATO, or other government bodies
-   - Fake urgent communications designed to provoke hasty action
-   - Documents with embedded tracking pixels or data-exfiltration links
-   - Files designed to be opened and executed by a specific target (spear-phishing)
-   - Decoy content that looks legitimate but hides a malicious purpose
-   - Files containing fake login portals or credential harvesting forms
+FILE:
+Name: ${originalName}
 
-Be highly analytical. Consider context, writing style, structure, and intent — not just pattern matching. A clean file can still be a sophisticated honeytrap.
-
-You MUST respond with valid JSON only. No markdown, no explanation outside the JSON object.`;
-
-  const userPrompt = `Analyse this file submitted to SENTINEL for threat assessment.
-
-FILE METADATA:
-  Name: ${originalName}
-  Path: ${filePath}
-
-STATIC ANALYSIS FLAGS:
+STATIC FLAGS:
 ${staticSummary}
 
-VIRUSTOTAL RESULT:
-  ${vtSummary}
+VIRUSTOTAL:
+${vtSummary}
 
-FILE CONTENT SAMPLE:
-${contentNote ? `[Note: ${contentNote}]` : ''}
-\`\`\`
+CONTENT:
+${contentNote}
 ${fileContent}
-\`\`\`
 
-Provide your assessment as JSON with exactly this structure:
+Return JSON:
 {
   "is_vulnerable": boolean,
   "is_honeytrap": boolean,
-  "risk_score": integer (0-100, where 0=clean, 100=confirmed critical threat),
+  "risk_score": number (0-100),
   "verdict": "SAFE" | "SUSPICIOUS" | "VULNERABLE" | "HONEYTRAP",
   "confidence": "LOW" | "MEDIUM" | "HIGH",
-  "summary": "2-3 sentence plain English summary suitable for a duty analyst",
-  "vulnerability_details": ["specific finding 1", "specific finding 2"],
-  "honeytrap_indicators": ["indicator 1", "indicator 2"],
-  "target_profile": "Who is the likely intended target of this file? Or null if not a honeytrap",
-  "recommended_action": "QUARANTINE | BLOCK | MONITOR | RELEASE — with 1-sentence rationale",
+  "summary": "short summary",
+  "vulnerability_details": [],
+  "honeytrap_indicators": [],
+  "target_profile": string | null,
+  "recommended_action": string,
   "ioc_extraction": {
-    "ips": ["..."],
-    "domains": ["..."],
-    "hashes": ["..."],
-    "urls": ["..."]
+    "ips": [],
+    "domains": [],
+    "hashes": [],
+    "urls": []
   }
-}`;
+}
+`;
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash" // 🔥 fast + cheap
     });
 
-    const rawText = message.content[0].text.trim();
-    // Strip any accidental markdown fences
-    const jsonText = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-    return JSON.parse(jsonText);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Clean JSON
+    const clean = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+
+    return JSON.parse(clean);
+
   } catch (err) {
-    logger.error(`Claude AI analysis failed: ${err.message}`);
-    // Return a safe fallback so the upload still completes
+    logger.error(`Gemini AI analysis failed: ${err.message}`);
+
     return {
       is_vulnerable: false,
       is_honeytrap: false,
       risk_score: 50,
       verdict: 'SUSPICIOUS',
       confidence: 'LOW',
-      summary: 'AI analysis could not be completed. File held in quarantine pending manual review.',
-      vulnerability_details: ['AI analysis unavailable'],
+      summary: 'Gemini analysis failed. Manual review required.',
+      vulnerability_details: ['AI unavailable'],
       honeytrap_indicators: [],
       target_profile: null,
-      recommended_action: 'QUARANTINE — AI analysis failed, manual review required',
+      recommended_action: 'QUARANTINE — AI failure',
       ioc_extraction: { ips: [], domains: [], hashes: [], urls: [] },
     };
   }
 }
-
 // ─────────────────────────────────────────────
 // MAIN ORCHESTRATOR
 // ─────────────────────────────────────────────
