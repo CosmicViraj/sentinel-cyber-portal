@@ -1,75 +1,96 @@
 const express = require('express');
 const router = express.Router();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const aiService = require('../services/ai.service');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 
 // 🔹 CHAT API
-router.post('/chat', async (req, res) => {
+router.post("/chat", async (req, res) => {
   try {
+
     const { messages } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Messages array required" });
+    }
 
-    const prompt = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-
-    const result = await model.generateContent(prompt);
-    const reply = result.response.text();
+    const reply = await aiService.chatWithAI(messages);
 
     res.json({ reply });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ reply: "AI failed" });
+
+    console.error("AI error:", err);
+    res.status(500).json({ error: "AI failed" });
+
   }
 });
 
+module.exports = router;
+
 // 🔹 PHISHING SCAN
-router.post('/phishing-scan', async (req, res) => {
+router.post("/phishing-scan", async (req, res) => {
   try {
+
     const { url } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    if (!url) {
+      return res.status(400).json({ error: "URL required" });
+    }
 
-    const prompt = `Analyse this URL for phishing risk:\n${url}`;
+    const result = await aiService.scanPhishing(url);
 
-    const result = await model.generateContent(prompt);
-    res.json({ result: result.response.text() });
+    res.json({ result });
 
   } catch (err) {
-    res.status(500).json({ result: "Error analysing URL" });
+
+    console.error("Phishing scan error:", err);
+    res.status(500).json({ error: "Phishing scan failed" });
+
   }
 });
 
 // 🔹 VULNERABILITY SCAN
-router.post('/vuln-scan', async (req, res) => {
+router.post("/vuln-scan", async (req, res) => {
   try {
+
     const { target } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    if (!target) {
+      return res.status(400).json({ error: "Target required" });
+    }
 
-    const prompt = `Analyse vulnerabilities for: ${target}`;
+    const result = await aiService.scanVulnerability(target);
 
-    const result = await model.generateContent(prompt);
-    res.json({ result: result.response.text() });
+    res.json({ result });
 
   } catch (err) {
-    res.status(500).json({ result: "Error analysing target" });
+
+    console.error("Vulnerability scan error:", err);
+    res.status(500).json({ error: "Vulnerability scan failed" });
+
   }
 });
 
 // 🔹 BRIEFING
-router.get('/briefing', async (req, res) => {
+router.post("/briefing", async (req, res) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `Generate a cyber threat intelligence briefing`;
+    const { incidents } = req.body;
 
-    const result = await model.generateContent(prompt);
-    res.json({ briefing: result.response.text() });
+    if (!incidents) {
+      return res.status(400).json({ error: "Incidents required" });
+    }
+
+    const briefing = await aiService.generateBriefing(incidents);
+
+    res.json({ briefing });
 
   } catch (err) {
-    res.status(500).json({ briefing: "Error generating briefing" });
+
+    console.error("Briefing error:", err);
+    res.status(500).json({ error: "Briefing generation failed" });
+
   }
 });
 

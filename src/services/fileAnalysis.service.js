@@ -13,11 +13,11 @@ const fs   = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const axios  = require('axios');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const aiService = require('./ai.service');
 const logger = require('../utils/logger');
 require('dotenv').config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 
 // ─────────────────────────────────────────────
 // LAYER 1 — Static Analysis
@@ -191,10 +191,11 @@ async function virusTotalCheck(filePath, sha256) {
 }
 
 // ─────────────────────────────────────────────
-// LAYER 3 — Gemini AI Analysis (UPDATED)
+// LAYER 3 — Groq AI Analysis
 // ─────────────────────────────────────────────
 
 async function aiAnalysis(filePath, originalName, staticFlags, vtResult) {
+
   let fileContent = '';
   let contentNote = '';
 
@@ -220,39 +221,35 @@ async function aiAnalysis(filePath, originalName, staticFlags, vtResult) {
     : '• No static flags';
 
   const prompt = `
-You are a senior cybersecurity analyst.
+You are SENTINEL AI — a military cyber threat intelligence analyst.
 
-Analyze this file for:
-1. Malware / vulnerabilities
-2. Honeytrap / phishing intent
+Analyze this uploaded file.
 
-Respond ONLY in valid JSON.
+FILE NAME: ${originalName}
 
-FILE:
-Name: ${originalName}
-
-STATIC FLAGS:
+STATIC ANALYSIS FLAGS:
 ${staticSummary}
 
-VIRUSTOTAL:
+VIRUSTOTAL RESULT:
 ${vtSummary}
 
-CONTENT:
+FILE CONTENT SAMPLE:
 ${contentNote}
 ${fileContent}
 
-Return JSON:
+Respond ONLY in JSON with this structure:
+
 {
   "is_vulnerable": boolean,
   "is_honeytrap": boolean,
-  "risk_score": number (0-100),
+  "risk_score": number,
   "verdict": "SAFE" | "SUSPICIOUS" | "VULNERABLE" | "HONEYTRAP",
   "confidence": "LOW" | "MEDIUM" | "HIGH",
   "summary": "short summary",
   "vulnerability_details": [],
   "honeytrap_indicators": [],
-  "target_profile": string | null,
-  "recommended_action": string,
+  "target_profile": null,
+  "recommended_action": "",
   "ioc_extraction": {
     "ips": [],
     "domains": [],
@@ -263,16 +260,12 @@ Return JSON:
 `;
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash" // 🔥 fast + cheap
-    });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const aiResponse = await aiService.chatWithAI([
+      { role: 'user', content: prompt }
+    ]);
 
-    // Clean JSON
-    const clean = text
+    const clean = aiResponse
       .replace(/```json/g, '')
       .replace(/```/g, '')
       .trim();
@@ -280,7 +273,8 @@ Return JSON:
     return JSON.parse(clean);
 
   } catch (err) {
-    logger.error(`Gemini AI analysis failed: ${err.message}`);
+
+    logger.error(`Groq AI analysis failed: ${err.message}`);
 
     return {
       is_vulnerable: false,
@@ -288,15 +282,17 @@ Return JSON:
       risk_score: 50,
       verdict: 'SUSPICIOUS',
       confidence: 'LOW',
-      summary: 'Gemini analysis failed. Manual review required.',
+      summary: 'AI analysis failed — manual review required',
       vulnerability_details: ['AI unavailable'],
       honeytrap_indicators: [],
       target_profile: null,
-      recommended_action: 'QUARANTINE — AI failure',
-      ioc_extraction: { ips: [], domains: [], hashes: [], urls: [] },
+      recommended_action: 'QUARANTINE',
+      ioc_extraction: { ips: [], domains: [], hashes: [], urls: [] }
     };
+
   }
 }
+
 // ─────────────────────────────────────────────
 // MAIN ORCHESTRATOR
 // ─────────────────────────────────────────────

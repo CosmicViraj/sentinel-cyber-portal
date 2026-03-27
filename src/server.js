@@ -34,3 +34,21 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 SENTINEL running on http://localhost:${PORT}`);
 });
+
+
+const jwt = require("jsonwebtoken");
+
+app.post("/api/login", (req, res) => {
+
+  const user = {
+    id: 1,
+    email: "analyst@sentinel.ai",
+    role: "analyst"
+  };
+
+  const token = jwt.sign(user, "SENTINEL_SECRET_KEY", {
+    expiresIn: "24h"
+  });
+
+  res.json({ token });
+});

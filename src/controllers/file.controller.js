@@ -33,8 +33,9 @@ exports.uploadAndAnalyse = async (req, res) => {
     });
   }
 
-  logger.info(`File upload received: "${file.originalname}" (${file.size} bytes) by user ${req.user.id}`);
-
+  const userId = req.user?.id || null;
+  logger.info(`File upload received: "${file.originalname}" (${file.size} bytes) by user ${userId}`);
+  
   try {
     // Run three-layer analysis
     const result = await analyseFile(file.path, file.originalname, file.mimetype);
@@ -69,33 +70,33 @@ exports.uploadAndAnalyse = async (req, res) => {
          $10, $11, $12, $13,
          $14, $15, $16
        ) RETURNING *`,
-      [
-        req.body.incidentId || null,
-        req.user.id,
-        file.originalname,
-        path.basename(file.path),
-        result.fileSize,
-        file.mimetype,
-        result.sha256,
-        result.verdict,
-        result.riskScore,
-        JSON.stringify(result.staticFlags),
-        JSON.stringify(result.virusTotalResult),
-        JSON.stringify({
-          summary:              result.summary,
-          vulnerabilityDetails: result.vulnerabilityDetails,
-          recommendedAction:    result.recommendedAction,
-          targetProfile:        result.targetProfile,
-          confidence:           result.confidence,
-          iocExtraction:        result.iocExtraction,
-          analysisMs:           result.analysisMs,
-          entropy:              result.entropy,
-        }),
-        JSON.stringify(result.honeyTrapIndicators),
-        result.isHoneytrap,
-        shouldQuarantine,
-        quarantinePath,
-      ]
+     [
+  req.body.incidentId || null,
+  userId,
+  file.originalname,
+  path.basename(file.path),
+  result.fileSize,
+  file.mimetype,
+  result.sha256,
+  result.verdict,
+  result.riskScore,
+  JSON.stringify(result.staticFlags),
+  JSON.stringify(result.virusTotalResult),
+  JSON.stringify({
+    summary: result.summary,
+    vulnerabilityDetails: result.vulnerabilityDetails,
+    recommendedAction: result.recommendedAction,
+    targetProfile: result.targetProfile,
+    confidence: result.confidence,
+    iocExtraction: result.iocExtraction,
+    analysisMs: result.analysisMs,
+    entropy: result.entropy,
+  }),
+  JSON.stringify(result.honeyTrapIndicators),
+  result.isHoneytrap,
+  shouldQuarantine,
+  quarantinePath,
+]
     );
 
     const saved = rows[0];
@@ -106,13 +107,17 @@ exports.uploadAndAnalyse = async (req, res) => {
         `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata, ip_address)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [
-          req.user.id,
-          'FILE_ANALYSED',
-          'file_analysis',
-          saved.id,
-          JSON.stringify({ originalName: file.originalname, verdict: result.verdict, riskScore: result.riskScore }),
-          req.ip,
-        ]
+  userId,
+  'FILE_ANALYSED',
+  'file_analysis',
+  saved.id,
+  JSON.stringify({
+    originalName: file.originalname,
+    verdict: result.verdict,
+    riskScore: result.riskScore
+  }),
+  req.ip,
+]
       ).catch(() => {}); // Non-fatal if audit_logs doesn't exist yet
     } catch {}
 
@@ -307,7 +312,8 @@ exports.deleteAnalysis = async (req, res) => {
 
     await pool.query('DELETE FROM file_analyses WHERE id = $1', [req.params.id]);
 
-    logger.warn(`File analysis record deleted: ${record.original_name} by ${req.user.username}`);
+    const username = req.user?.username || "system";
+    logger.warn(`File analysis record deleted: ${record.original_name} by ${username}`);
     res.json({ success: true, message: 'Analysis record and file deleted' });
   } catch (err) {
     logger.error('Failed to delete file analysis:', err);
