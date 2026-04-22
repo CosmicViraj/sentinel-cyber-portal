@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 
-// ✅ Better check (DO THIS)
+// ✅ Better check
 const isProd = !!process.env.DATABASE_URL;
 
 console.log("ENV CHECK:", {
@@ -15,7 +15,9 @@ const pool = new Pool(
         connectionString: process.env.DATABASE_URL,
         ssl: {
           rejectUnauthorized: false
-        }
+        },
+        // 🔥 IMPORTANT: force IPv4
+        family: 4
       }
     : {
         host: 'localhost',
