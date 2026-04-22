@@ -56,6 +56,8 @@ async function migrate() {
       ip_address VARCHAR(50),
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
   `);
 
   console.log('✅ All tables created');
