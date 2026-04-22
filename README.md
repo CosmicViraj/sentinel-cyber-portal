@@ -1,4 +1,4 @@
-# SENTINEL — MoD Cyber Incident & Safety Portal
+# SENTINEL : MoD Cyber Incident & Safety Portal
 
 > AI-powered cyber incident reporting and threat intelligence portal for the Ministry of Defence — featuring real-time threat monitoring, AI-driven incident triage, animated global attack visualization, and secure incident reporting with automated threat assessment.
 
